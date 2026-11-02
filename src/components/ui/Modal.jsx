@@ -5,7 +5,7 @@ import { cx } from '@/lib/cx'
 import styles from './Modal.module.css'
 
 /** Modal base: cierre con ESC / clic en overlay, foco inicial dentro del diálogo. */
-export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', children, footer }) {
+export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', size = 'md', children, footer }) {
   const titleId = useId()
   const dialogRef = useRef(null)
 
@@ -34,7 +34,7 @@ export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', 
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={styles.dialog}
+        className={cx(styles.dialog, size === 'lg' && styles.wide)}
       >
         <div className={styles.header}>
           {icon && <span className={cx(styles.icon, tone === 'danger' && styles.iconDanger)}>{icon}</span>}

@@ -30,6 +30,7 @@
   color: var(--seashare-color-brand-primary);
 }
 .iconDanger { background: #fde8e5; color: var(--seashare-color-brand-accent); }
+.wide { max-width: 720px; }
 .titles { flex: 1; min-width: 0; }
 .title { margin: 0; font: var(--text-title); }
 .subtitle { margin: var(--space-1) 0 0; font: var(--text-label); color: var(--seashare-color-text-secondary); }

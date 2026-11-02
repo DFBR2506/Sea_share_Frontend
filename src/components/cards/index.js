@@ -1,3 +1,4 @@
 export { BoatCard } from './BoatCard'
 export { ReservationItem } from './ReservationItem'
 export { FinancialSummary } from './FinancialSummary'
+export { StatTile, StatGrid } from './StatTile'

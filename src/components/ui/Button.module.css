@@ -23,4 +23,6 @@
   color: var(--seashare-color-text-secondary);
   cursor: not-allowed;
 }
+.outlineDanger { background: var(--seashare-color-surface); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); border-radius: var(--radius-sm); font-weight: 700; }
+.outlineDanger:hover:not(:disabled) { background: #fde8e5; }
 .block { width: 100%; }
