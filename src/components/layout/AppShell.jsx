@@ -10,6 +10,8 @@ export function AppShell({ role, tinted = false }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
+  const isTinted = tinted && !pathname.startsWith('/owner/finanzas')
+
   if (current !== role) return <Navigate to="/login" replace />
 
   const subItems = role === 'OWNER' && pathname.startsWith('/owner/finanzas') ? OWNER_FINANCE_SUBNAV : undefined
@@ -21,8 +23,8 @@ export function AppShell({ role, tinted = false }) {
         subItems={subItems}
         onProfileClick={() => { logout(); navigate('/login') }}
       />
-      <main className={tinted ? `${styles.content} ${styles.tinted}` : styles.content}>
-        {tinted ? <div className={styles.inner}><Outlet /></div> : <Outlet />}
+      <main className={isTinted ? `${styles.content} ${styles.tinted}` : styles.content}>
+        {isTinted ? <div className={styles.inner}><Outlet /></div> : <Outlet />}
       </main>
     </>
   )
