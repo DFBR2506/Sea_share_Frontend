@@ -1,0 +1,12 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-pill);
+  font: var(--text-label);
+  white-space: nowrap;
+}
+.success { background: var(--seashare-color-brand-soft); color: var(--seashare-color-brand-primary); }
+.neutral { background: #f0f0f0; color: var(--seashare-color-text-secondary); }
+.warning { background: #fff3d6; color: #8a5a00; }
+.danger { background: #fde8e5; color: var(--seashare-color-brand-accent); }

@@ -1,0 +1,5 @@
+.page { max-width: 960px; margin: 0 auto; padding: var(--space-5) var(--page-gutter); display: flex; flex-direction: column; gap: var(--space-5); }
+.section { padding: var(--space-5); border-radius: var(--radius-md); background: var(--seashare-color-surface); border: 1px solid var(--seashare-color-border-default); }
+.section h2 { margin: 0 0 var(--space-4); font: var(--text-title); color: var(--seashare-color-brand-primary); }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.col { display: flex; flex-direction: column; gap: var(--space-3); max-width: 360px; }
