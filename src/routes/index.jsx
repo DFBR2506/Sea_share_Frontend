@@ -14,6 +14,9 @@ import OwnerVesselsPage from '@/features/boats/pages/OwnerVesselsPage'
 import VesselDetailPage from '@/features/boats/pages/VesselDetailPage'
 import VesselEditPage from '@/features/boats/pages/VesselEditPage'
 import VesselRegisterPage from '@/features/boats/pages/VesselRegisterPage'
+import AdminDisputesPage from '@/features/reservations/pages/AdminDisputesPage'
+import OwnerReservationDetailPage from '@/features/reservations/pages/OwnerReservationDetailPage'
+import OwnerReservationsPage from '@/features/reservations/pages/OwnerReservationsPage'
 import RootRedirect from './RootRedirect'
 
 const page = (title, figma) => <Placeholder title={title} figma={figma} />
@@ -39,7 +42,8 @@ export const router = createBrowserRouter([
       { path: '/owner/embarcaciones/nueva', element: <VesselRegisterPage /> },
       { path: '/owner/embarcaciones/:vesselId', element: <VesselDetailPage mode="owner" /> },
       { path: '/owner/embarcaciones/:vesselId/editar', element: <VesselEditPage /> },
-      { path: '/owner/reservas', element: page('Reservas recibidas', '28:2212') },
+      { path: '/owner/reservas', element: <OwnerReservationsPage /> },
+      { path: '/owner/reservas/:reservationId', element: <OwnerReservationDetailPage /> },
       { path: '/owner/finanzas', element: <Navigate to="/owner/finanzas/balance" replace /> },
       { path: '/owner/finanzas/balance', element: page('Balance general', '28:3296') },
       { path: '/owner/finanzas/historial', element: page('Historial de pagos', '28:3296') },
@@ -52,7 +56,7 @@ export const router = createBrowserRouter([
       { path: '/admin', element: <AdminFleetPage /> },
       { path: '/admin/embarcaciones/:vesselId', element: <VesselDetailPage mode="admin" /> },
       { path: '/admin/propietarios/:ownerId', element: <AdminOwnerPage /> },
-      { path: '/admin/disputas', element: page('Resolución de disputas', '26:1121') },
+      { path: '/admin/disputas', element: <AdminDisputesPage /> },
     ],
   },
   {

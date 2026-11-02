@@ -22,7 +22,7 @@ export function AppShell({ role, tinted = false }) {
         onProfileClick={() => { logout(); navigate('/login') }}
       />
       <main className={tinted ? `${styles.content} ${styles.tinted}` : styles.content}>
-        <Outlet />
+        {tinted ? <div className={styles.inner}><Outlet /></div> : <Outlet />}
       </main>
     </>
   )
