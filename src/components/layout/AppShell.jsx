@@ -5,7 +5,7 @@ import { TopBar } from './TopBar'
 import styles from './AppShell.module.css'
 
 /** Layout por rol: redirige a /login si no hay sesión o el rol no corresponde. */
-export function AppShell({ role }) {
+export function AppShell({ role, tinted = false }) {
   const { role: current, logout } = useSession()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -21,7 +21,7 @@ export function AppShell({ role }) {
         subItems={subItems}
         onProfileClick={() => { logout(); navigate('/login') }}
       />
-      <main className={styles.content}>
+      <main className={tinted ? `${styles.content} ${styles.tinted}` : styles.content}>
         <Outlet />
       </main>
     </>

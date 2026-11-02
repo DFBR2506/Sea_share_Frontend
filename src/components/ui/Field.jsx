@@ -2,11 +2,11 @@ import { useId } from 'react'
 import { cx } from '@/lib/cx'
 import styles from './Field.module.css'
 
-function Field({ id, label, error, render, ...props }) {
+function Field({ id, label, error, caps, render, ...props }) {
   const auto = useId()
   const fieldId = id ?? auto
   return (
-    <div className={styles.field}>
+    <div className={cx(styles.field, caps && styles.caps)}>
       {label && <label htmlFor={fieldId} className={styles.label}>{label}</label>}
       {render({ id: fieldId, className: cx(styles.control, error && styles.invalid), 'aria-invalid': !!error, ...props })}
       {error && <span className={styles.error} role="alert">{error}</span>}

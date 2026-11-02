@@ -25,3 +25,4 @@ export function formatRange(a, b) {
 
 export const money = (n) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 export const moneyInt = (n) => `$${n.toLocaleString('en-US')}`
+export const copMoney = (n) => `$ ${n.toLocaleString('es-CO')} COP`

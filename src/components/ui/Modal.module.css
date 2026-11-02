@@ -50,3 +50,10 @@
 @media (max-width: 480px) {
   .footer > * { flex: 1 1 100%; }
 }
+
+.alert { max-width: 360px; text-align: center; }
+.headerAlert { flex-direction: column; align-items: center; margin-bottom: var(--space-3); }
+.headerAlert .titles { text-align: center; }
+.headerAlert .subtitle { font-size: 13px; line-height: 1.5; color: var(--seashare-color-brand-primary); }
+.alert .footer > * { flex: 1; }
+.alert .body { align-items: center; text-align: center; }

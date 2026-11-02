@@ -5,7 +5,7 @@ import { cx } from '@/lib/cx'
 import styles from './Modal.module.css'
 
 /** Modal base: cierre con ESC / clic en overlay, foco inicial dentro del diálogo. */
-export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', size = 'md', children, footer }) {
+export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', size = 'md', variant = 'default', children, footer }) {
   const titleId = useId()
   const dialogRef = useRef(null)
 
@@ -34,15 +34,15 @@ export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', 
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={cx(styles.dialog, size === 'lg' && styles.wide)}
+        className={cx(styles.dialog, size === 'lg' && styles.wide, variant === 'alert' && styles.alert)}
       >
-        <div className={styles.header}>
+        <div className={cx(styles.header, variant === 'alert' && styles.headerAlert)}>
           {icon && <span className={cx(styles.icon, tone === 'danger' && styles.iconDanger)}>{icon}</span>}
           <div className={styles.titles}>
             <h2 id={titleId} className={styles.title}>{title}</h2>
             {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
           </div>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar"><img src={closeIcon} alt="" width="18" height="18" /></button>
+          {variant !== 'alert' && <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar"><img src={closeIcon} alt="" width="18" height="18" /></button>}
         </div>
         <div className={styles.body}>{children}</div>
         {footer && <div className={styles.footer}>{footer}</div>}
