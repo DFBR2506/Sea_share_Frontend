@@ -3,3 +3,5 @@
 .section h2 { margin: 0 0 var(--space-4); font: var(--text-title); color: var(--seashare-color-brand-primary); }
 .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
 .col { display: flex; flex-direction: column; gap: var(--space-3); max-width: 360px; }
+.stack { display: flex; flex-direction: column; gap: var(--space-3); border: 1px solid var(--seashare-color-border-default); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4); align-items: start; }

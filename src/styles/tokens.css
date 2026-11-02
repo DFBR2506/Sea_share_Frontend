@@ -10,7 +10,7 @@
   --seashare-color-surface: #ffffff;
   --seashare-color-border-default: #e4e4e4;
   --seashare-color-disabled: #e4e4e4;
-  --seashare-color-overlay: rgba(17, 17, 17, 0.5);
+  --seashare-color-overlay: rgba(17, 17, 17, 0.42);
 
   /* Tipografía */
   --font-family: 'Inter Variable', Inter, system-ui, sans-serif;

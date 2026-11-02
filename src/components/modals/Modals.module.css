@@ -1,0 +1,12 @@
+.title { margin: 0; font: var(--text-body-medium); }
+.muted { margin: 0; font: var(--text-body); color: var(--seashare-color-text-secondary); }
+.total {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: 10px;
+  background: var(--seashare-color-brand-soft);
+  font: var(--text-body-medium);
+  color: var(--seashare-color-brand-primary);
+}
+.icon { width: 18px; height: 18px; }

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import closeIcon from '@/assets/icons/close.svg'
 import { cx } from '@/lib/cx'
 import styles from './Modal.module.css'
 
@@ -41,7 +42,7 @@ export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', 
             <h2 id={titleId} className={styles.title}>{title}</h2>
             {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
           </div>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar">✕</button>
+          <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar"><img src={closeIcon} alt="" width="18" height="18" /></button>
         </div>
         <div className={styles.body}>{children}</div>
         {footer && <div className={styles.footer}>{footer}</div>}
