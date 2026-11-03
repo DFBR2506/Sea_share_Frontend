@@ -1,0 +1,46 @@
+.page { min-height: 100dvh; display: grid; grid-template-columns: 1fr; background: #030813; }
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: 32px var(--page-gutter);
+  background: rgba(11, 42, 74, 0.82);
+  color: #fff;
+}
+.brand { display: flex; align-items: center; gap: var(--space-3); font-weight: 700; font-size: 18px; }
+.mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--seashare-color-brand-primary); color: #030813; font-weight: 700; font-size: 20px; }
+.eyebrow { margin: 0 0 var(--space-3); font-weight: 700; font-size: 14px; color: var(--seashare-color-brand-support); }
+.headline { margin: 0 0 var(--space-4); font-weight: 700; font-size: clamp(32px, 5vw, 52px); line-height: 1.15; }
+.lead { margin: 0; font-size: clamp(16px, 2vw, 20px); color: var(--seashare-color-brand-soft); max-width: 520px; }
+.hint, .copyright { margin: 0; font-size: 13px; color: var(--seashare-color-brand-soft); }
+.hint { font-size: 16px; margin-top: var(--space-5); }
+.heroBody { display: flex; flex-direction: column; }
+.panel { display: grid; place-items: center; padding: var(--space-5) var(--page-gutter); }
+.card { width: 100%; max-width: 580px; padding: 32px 24px; border-radius: 20px; background: #fff; color: var(--seashare-color-brand-primary); }
+.card h1 { margin: 0 0 var(--space-2); font-size: 28px; font-weight: 700; }
+.sub { margin: 0 0 var(--space-5); font-size: 15px; }
+.form { display: flex; flex-direction: column; gap: var(--space-4); }
+.forgot { align-self: flex-end; font-weight: 700; font-size: 14px; color: var(--seashare-color-brand-primary); text-decoration: none; }
+.choose { margin: var(--space-5) 0 var(--space-3); font-size: 14px; }
+.roles { display: grid; grid-template-columns: 1fr; gap: var(--space-3); }
+.role { min-height: 52px; border: 0; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; background: var(--seashare-color-brand-primary); color: #fff; }
+.role:hover { filter: brightness(1.15); }
+.roleAlt { background: var(--seashare-color-bg-default); color: var(--seashare-color-brand-primary); }
+.roleAlt:hover { filter: brightness(0.96); }
+.footer { margin: var(--space-5) 0 0; padding-top: var(--space-4); border-top: 1px solid rgba(11, 42, 74, 0.25); font-size: 13px; }
+
+@media (min-width: 640px) {
+  .card { padding: 54px; }
+  .card h1 { font-size: 32px; }
+  .roles { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 960px) {
+  .page { grid-template-columns: 900px 1fr; }
+  .hero { padding: 72px 78px 40px; }
+  .panel { margin-left: -140px; position: relative; padding: 40px 32px; }
+}
+@media (max-width: 959px) {
+  .hero { padding-bottom: var(--space-5); }
+  .hint { display: none; }
+}

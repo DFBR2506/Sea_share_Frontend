@@ -1,0 +1,30 @@
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: 5px 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 1px solid var(--seashare-color-border-default);
+  border-radius: var(--radius-pill);
+  background: #f8fafc;
+  max-width: 100%;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  font: var(--text-body-medium);
+  color: var(--seashare-color-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--seashare-color-text-primary); }
+.active { background: var(--seashare-color-brand-primary); color: #fff; }
+.active:hover { color: #fff; }
+@media (max-width: 767px) {
+  .tab { padding: 0 16px; font-size: 13px; }
+}

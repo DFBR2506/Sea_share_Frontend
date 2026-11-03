@@ -1,0 +1,11 @@
+.head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.version { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; border: 1px solid var(--seashare-color-border-default); border-radius: 10px; background: #fff; font-size: 11px; color: var(--seashare-color-brand-primary); }
+.version span { font-weight: 700; }
+.version strong { font-size: 13px; }
+.card { padding: 24px; }
+.h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--seashare-color-brand-primary); }
+.sub { margin: 0 0 20px; font-size: 12px; color: var(--seashare-color-brand-primary); }
+.grid { display: grid; grid-template-columns: 1fr; gap: 20px 48px; }
+@media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
+.actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
+.ok { margin-right: auto; font-size: 12px; font-weight: 700; color: #1b7f4b; }

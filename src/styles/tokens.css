@@ -1,0 +1,43 @@
+:root {
+  /* Colores (Figma · seashare-color-*) */
+  --seashare-color-text-primary: #111111;
+  --seashare-color-text-secondary: #666666;
+  --seashare-color-brand-primary: #0b2a4a;
+  --seashare-color-brand-support: #00b3c6;
+  --seashare-color-brand-soft: #e6f7fa;
+  --seashare-color-brand-accent: #e5503c;
+  --seashare-color-bg-default: #f5f5f5;
+  --seashare-color-surface: #ffffff;
+  --seashare-color-border-default: #e4e4e4;
+  --seashare-color-disabled: #e4e4e4;
+  --seashare-color-overlay: rgba(17, 17, 17, 0.42);
+
+  /* Tipografía */
+  --font-family: 'Inter Variable', Inter, system-ui, sans-serif;
+  --text-title: 700 20px/24px var(--font-family);
+  --text-body: 400 14px/1.2 var(--font-family);
+  --text-body-medium: 500 14px/1.2 var(--font-family);
+  --text-label: 500 12px/1.2 var(--font-family);
+
+  /* Espaciado, radios, sombras */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --shadow-modal: 0 16px 48px rgba(17, 17, 17, 0.2);
+
+  /* Layout */
+  --page-gutter: 16px;
+  --control-height: 44px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --page-gutter: 32px;
+  }
+}
