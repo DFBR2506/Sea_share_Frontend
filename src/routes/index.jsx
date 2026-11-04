@@ -61,7 +61,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    element: <AppShell role="FINADMIN" />,
+    element: <AppShell role="FINADMIN" tinted />,
     children: [
       { path: '/finadmin/parametros', element: <FinanceParamsPage /> },
       { path: '/finadmin/registros', element: <FinanceRecordsPage scope="admin" /> },

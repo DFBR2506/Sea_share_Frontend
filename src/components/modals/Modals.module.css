@@ -7,6 +7,6 @@
   border-radius: 10px;
   background: var(--seashare-color-brand-soft);
   font: var(--text-body-medium);
-  color: var(--seashare-color-brand-primary);
+  color: var(--seashare-color-text-brand);
 }
 .icon { width: 18px; height: 18px; }

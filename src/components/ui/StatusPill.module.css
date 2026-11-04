@@ -1,4 +1,4 @@
 .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.ok { background: #d9f7e5; color: var(--seashare-color-brand-primary); }
-.warn { background: #fff3b8; color: var(--seashare-color-brand-accent); }
+.ok { background: var(--seashare-color-success-bg); color: var(--seashare-color-text-brand); }
+.warn { background: var(--seashare-color-warning-bg); color: var(--seashare-color-brand-accent); }

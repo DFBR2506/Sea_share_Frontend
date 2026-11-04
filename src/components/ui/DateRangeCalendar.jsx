@@ -70,9 +70,9 @@ export function DateRangeCalendar({ value, onChange, minDate = TODAY }) {
         })}
       </div>
       <div className={styles.legend}>
-        <span><i style={{ background: '#d9d9d9' }} />Inicio y fin</span>
+        <span><i style={{ background: 'var(--seashare-color-neutral-300)' }} />Inicio y fin</span>
         <span><i style={{ background: 'var(--seashare-color-brand-soft)' }} />Tu viaje</span>
-        <span><i style={{ border: '2px solid #f0a030' }} />Hoy</span>
+        <span><i style={{ border: '2px solid var(--seashare-color-gold)' }} />Hoy</span>
       </div>
     </div>
   )

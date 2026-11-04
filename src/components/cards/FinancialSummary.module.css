@@ -8,5 +8,5 @@
   background: var(--seashare-color-surface);
 }
 .label { margin: 0; font: var(--text-label); color: var(--seashare-color-text-secondary); }
-.value { margin: 0; font: var(--text-title); color: var(--seashare-color-brand-primary); }
-.delta { margin: 0; font: var(--text-label); color: var(--seashare-color-brand-support); }
+.value { margin: 0; font: var(--text-title); color: var(--seashare-color-text-brand); }
+.delta { margin: 0; font: var(--text-label); color: var(--seashare-color-text-accent); }

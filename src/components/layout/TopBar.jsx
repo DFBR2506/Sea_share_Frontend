@@ -13,7 +13,7 @@ import styles from './TopBar.module.css'
  */
 export function TopBar({ role, subItems, brandTo = '/', sticky = true, onProfileClick }) {
   const [open, setOpen] = useState(false)
-  const { items, initial, subtitle, plain } = NAV_BY_ROLE[role]
+  const { items, initial, subtitle } = NAV_BY_ROLE[role]
 
   return (
     <header className={cx(styles.bar, !sticky && styles.static)}>
@@ -46,7 +46,7 @@ export function TopBar({ role, subItems, brandTo = '/', sticky = true, onProfile
               to={to}
               end={end}
               onClick={() => setOpen(false)}
-              className={({ isActive }) => cx(styles.item, plain && styles.plain, isActive && styles.active)}
+              className={({ isActive }) => cx(styles.item, isActive && styles.active)}
             >
               {icon && <img src={icon} alt="" className={styles.icon} />}
               {label}

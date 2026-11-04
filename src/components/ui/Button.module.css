@@ -12,26 +12,26 @@
   transition: background-color 0.15s, transform 0.05s;
 }
 .primary { background: var(--seashare-color-brand-primary); color: #fff; }
-.primary:hover:not(:disabled) { background: #123d6b; }
-.primary:active:not(:disabled) { background: #071c33; transform: scale(0.98); }
-.secondary { background: #f0f0f0; color: var(--seashare-color-text-primary); }
+.primary:hover:not(:disabled) { background: var(--seashare-color-brand-primary-hover); }
+.primary:active:not(:disabled) { background: var(--seashare-color-brand-primary-active); transform: scale(0.98); }
+.secondary { background: var(--seashare-color-neutral-100); color: var(--seashare-color-text-primary); }
 .secondary:hover:not(:disabled) { background: var(--seashare-color-border-default); }
 .danger { background: var(--seashare-color-brand-accent); color: #fff; }
-.danger:hover:not(:disabled) { background: #cc3f2c; }
+.danger:hover:not(:disabled) { background: var(--seashare-color-danger-hover); }
 .button:disabled {
   background: var(--seashare-color-disabled);
   color: var(--seashare-color-text-secondary);
   cursor: not-allowed;
 }
 .outlineDanger { background: var(--seashare-color-surface); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); border-radius: var(--radius-sm); font-weight: 700; }
-.outlineDanger:hover:not(:disabled) { background: #fde8e5; }
+.outlineDanger:hover:not(:disabled) { background: var(--seashare-color-danger-soft); }
 .square { border-radius: 10px; font-weight: 700; font-size: 13px; }
-.outline { background: #fff; color: var(--seashare-color-brand-primary); border: 1px solid #d8f0f4; }
+.outline { background: var(--seashare-color-surface); color: var(--seashare-color-text-brand); border: 1px solid var(--seashare-color-line-soft); }
 .outline:hover:not(:disabled) { background: var(--seashare-color-brand-soft); }
-.warning { background: #fff3b8; color: var(--seashare-color-brand-accent); border: 1px solid #f6e27a; }
-.warning:hover:not(:disabled) { background: #ffec8f; }
-.dangerSoft { background: #ffe1dc; color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); }
-.dangerSoft:hover:not(:disabled) { background: #ffd0c8; }
-.soft { background: var(--seashare-color-bg-default); color: var(--seashare-color-brand-primary); }
-.soft:hover:not(:disabled) { background: #e9e9e9; }
+.warning { background: var(--seashare-color-warning-bg); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-warning-border); }
+.warning:hover:not(:disabled) { background: var(--seashare-color-warning-bg-strong); }
+.dangerSoft { background: var(--seashare-color-danger-soft); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); }
+.dangerSoft:hover:not(:disabled) { background: var(--seashare-color-danger-soft-strong); }
+.soft { background: var(--seashare-color-bg-default); color: var(--seashare-color-text-brand); }
+.soft:hover:not(:disabled) { background: var(--seashare-color-neutral-200); }
 .block { width: 100%; }

@@ -56,12 +56,8 @@
   right: 16px;
   bottom: 1px;
   height: 2px;
-  background: #fff;
+  background: var(--seashare-color-surface);
 }
-/* Variante sin iconos (FINADMIN): activo = gris, sin indicador */
-.plain { color: var(--seashare-color-text-secondary); background: transparent; height: 36px; }
-.plain.active { background: var(--seashare-color-border-default); color: var(--seashare-color-text-primary); }
-.plain.active::after { display: none; }
 .profile { padding: 0; border: 0; background: none; cursor: pointer; grid-column: 3; grid-row: 1; display: flex; align-items: center; gap: var(--space-2); font: var(--text-body-medium); color: var(--seashare-color-text-secondary); }
 .sub { display: flex; justify-content: center; padding: 0 var(--page-gutter) var(--space-3); }
 

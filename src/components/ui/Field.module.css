@@ -19,9 +19,9 @@ select.control {
   background-position: right 16px center;
   cursor: pointer;
 }
-.control:disabled { background: #fafafa; color: var(--seashare-color-text-secondary); }
+.control:disabled { background: var(--seashare-color-bg-default); color: var(--seashare-color-text-secondary); }
 .invalid { border-color: var(--seashare-color-brand-accent); }
 .error { font: var(--text-label); color: var(--seashare-color-brand-accent); }
-.caps .label { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--seashare-color-brand-primary); }
-.caps .control { border-color: #d8f0f4; border-radius: 10px; color: var(--seashare-color-brand-primary); }
+.caps .label { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--seashare-color-text-brand); }
+.caps .control { border-color: var(--seashare-color-line-soft); border-radius: 10px; color: var(--seashare-color-text-brand); }
 .caps .control:disabled { background: var(--seashare-color-bg-default); font-weight: 700; }
