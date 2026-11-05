@@ -27,9 +27,9 @@
   height: 40px;
   border-radius: 50%;
   background: var(--seashare-color-brand-soft);
-  color: var(--seashare-color-brand-primary);
+  color: var(--seashare-color-text-brand);
 }
-.iconDanger { background: #fde8e5; color: var(--seashare-color-brand-accent); }
+.iconDanger { background: var(--seashare-color-danger-soft); color: var(--seashare-color-brand-accent); }
 .wide { max-width: 720px; }
 .titles { flex: 1; min-width: 0; }
 .title { margin: 0; font: var(--text-title); }
@@ -54,6 +54,6 @@
 .alert { max-width: 360px; text-align: center; }
 .headerAlert { flex-direction: column; align-items: center; margin-bottom: var(--space-3); }
 .headerAlert .titles { text-align: center; }
-.headerAlert .subtitle { font-size: 13px; line-height: 1.5; color: var(--seashare-color-brand-primary); }
+.headerAlert .subtitle { font-size: 13px; line-height: 1.5; color: var(--seashare-color-text-brand); }
 .alert .footer > * { flex: 1; }
 .alert .body { align-items: center; text-align: center; }

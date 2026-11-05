@@ -3,6 +3,9 @@ import calendar from '@/assets/icons/calendar.svg'
 import compass from '@/assets/icons/compass.svg'
 import dashboard from '@/assets/icons/dashboard.svg'
 import dispute from '@/assets/icons/dispute.svg'
+import records from '@/assets/icons/records.svg'
+import report from '@/assets/icons/report.svg'
+import settings from '@/assets/icons/settings.svg'
 import wallet from '@/assets/icons/wallet.svg'
 
 // Rutas provisionales: se ajustarán al montar las pantallas de cada fase.
@@ -32,11 +35,10 @@ export const NAV_BY_ROLE = {
   FINADMIN: {
     initial: null,
     subtitle: 'Finanzas',
-    plain: true,
     items: [
-      { to: '/finadmin/parametros', label: 'Parámetros' },
-      { to: '/finadmin/registros', label: 'Registros' },
-      { to: '/finadmin/informe', label: 'Informe' },
+      { to: '/finadmin/parametros', label: 'Parámetros', icon: settings },
+      { to: '/finadmin/registros', label: 'Registros', icon: records },
+      { to: '/finadmin/informe', label: 'Informe', icon: report },
     ],
   },
 }

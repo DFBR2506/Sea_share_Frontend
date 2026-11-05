@@ -1,0 +1,43 @@
+.wrap { position: relative; }
+.input {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 14px 14px 0;
+  border: 2px solid var(--float-border, var(--seashare-color-border-default));
+  border-radius: 6px;
+  background: var(--float-input-bg, var(--seashare-color-surface));
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--float-color, var(--seashare-color-text-primary));
+}
+.label {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  z-index: 1;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--float-label, var(--seashare-color-text-secondary));
+  transform: translateY(-50%);
+  transform-origin: left center;
+  transition: top 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  cursor: text;
+  pointer-events: none;
+}
+/* Flotando: con foco o con contenido (placeholder " " deja de mostrarse) */
+.input:focus + .label,
+.input:not(:placeholder-shown) + .label {
+  top: 15px;
+  transform: translateY(-50%) scale(0.75);
+  color: var(--float-label-active, var(--float-border, var(--seashare-color-brand-primary)));
+}
+/* Error: va después de las reglas de foco/contenido para ganar en especificidad */
+.input.invalid { border-color: var(--float-error, #d92d20); }
+.input.invalid + .labelError,
+.input.invalid:focus + .labelError,
+.input.invalid:not(:placeholder-shown) + .labelError { color: var(--float-error, #d92d20); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .label { transition: none; }
+}

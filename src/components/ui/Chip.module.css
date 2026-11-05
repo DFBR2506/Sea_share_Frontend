@@ -1,1 +1,1 @@
-.chip { display: inline-flex; align-items: center; padding: 8px 16px; border-radius: var(--radius-pill); background: var(--seashare-color-brand-soft); color: var(--seashare-color-brand-primary); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 8px 16px; border-radius: var(--radius-pill); background: var(--seashare-color-brand-soft); color: var(--seashare-color-text-brand); font-size: 12px; font-weight: 700; white-space: nowrap; }

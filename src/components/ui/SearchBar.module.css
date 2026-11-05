@@ -10,5 +10,5 @@
   background: var(--seashare-color-surface);
 }
 .search:focus-within { border-color: var(--seashare-color-brand-support); }
-.search svg { flex: none; color: var(--seashare-color-brand-primary); }
+.search svg { flex: none; color: var(--seashare-color-text-brand); }
 .input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: var(--text-body); }

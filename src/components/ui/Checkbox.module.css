@@ -1,4 +1,4 @@
-.box { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--seashare-color-brand-primary); }
-.input { appearance: none; width: 18px; height: 18px; margin: 0; border: 1px solid #d8f0f4; border-radius: 4px; background: #fff; display: grid; place-items: center; cursor: pointer; }
+.box { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--seashare-color-text-brand); }
+.input { appearance: none; width: 18px; height: 18px; margin: 0; border: 1px solid var(--seashare-color-line-soft); border-radius: 4px; background: var(--seashare-color-surface); display: grid; place-items: center; cursor: pointer; }
 .input:checked { background: var(--seashare-color-brand-primary); border-color: var(--seashare-color-brand-primary); }
 .input:checked::after { content: '✓'; color: #fff; font-size: 12px; line-height: 1; }

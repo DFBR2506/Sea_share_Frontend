@@ -1,46 +1,59 @@
-.page { min-height: 100dvh; display: grid; grid-template-columns: 1fr; background: #030813; }
-.hero {
+.page { position: relative; min-height: 100dvh; font-family: 'Bricolage Grotesque', var(--font-family); }
+.slot { position: relative; z-index: 1; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; box-sizing: border-box; }
+.card {
+  width: min(560px, 100%);
+  box-sizing: border-box;
+  padding: 36px 32px;
+  border-radius: 8px;
+  background: #f2f8fd;
+  border: 2px solid #1b3478;
+  box-shadow: 10px 10px 0 #1b3478;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: var(--space-5);
-  padding: 32px var(--page-gutter);
-  background: rgba(11, 42, 74, 0.82);
-  color: #fff;
+  gap: 24px;
+  color: #14285f;
 }
-.brand { display: flex; align-items: center; gap: var(--space-3); font-weight: 700; font-size: 18px; }
-.mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--seashare-color-brand-primary); color: #030813; font-weight: 700; font-size: 20px; }
-.eyebrow { margin: 0 0 var(--space-3); font-weight: 700; font-size: 14px; color: var(--seashare-color-brand-support); }
-.headline { margin: 0 0 var(--space-4); font-weight: 700; font-size: clamp(32px, 5vw, 52px); line-height: 1.15; }
-.lead { margin: 0; font-size: clamp(16px, 2vw, 20px); color: var(--seashare-color-brand-soft); max-width: 520px; }
-.hint, .copyright { margin: 0; font-size: 13px; color: var(--seashare-color-brand-soft); }
-.hint { font-size: 16px; margin-top: var(--space-5); }
-.heroBody { display: flex; flex-direction: column; }
-.panel { display: grid; place-items: center; padding: var(--space-5) var(--page-gutter); }
-.card { width: 100%; max-width: 580px; padding: 32px 24px; border-radius: 20px; background: #fff; color: var(--seashare-color-brand-primary); }
-.card h1 { margin: 0 0 var(--space-2); font-size: 28px; font-weight: 700; }
-.sub { margin: 0 0 var(--space-5); font-size: 15px; }
-.form { display: flex; flex-direction: column; gap: var(--space-4); }
-.forgot { align-self: flex-end; font-weight: 700; font-size: 14px; color: var(--seashare-color-brand-primary); text-decoration: none; }
-.choose { margin: var(--space-5) 0 var(--space-3); font-size: 14px; }
-.roles { display: grid; grid-template-columns: 1fr; gap: var(--space-3); }
-.role { min-height: 52px; border: 0; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; background: var(--seashare-color-brand-primary); color: #fff; }
-.role:hover { filter: brightness(1.15); }
-.roleAlt { background: var(--seashare-color-bg-default); color: var(--seashare-color-brand-primary); }
-.roleAlt:hover { filter: brightness(0.96); }
-.footer { margin: var(--space-5) 0 0; padding-top: var(--space-4); border-top: 1px solid rgba(11, 42, 74, 0.25); font-size: 13px; }
+.head { position: relative; display: flex; flex-direction: column; gap: 8px; padding-right: 84px; }
+.logo { position: absolute; top: 0; right: 0; width: 72px; height: 72px; color: #1b3478; }
+.brand { font-size: 13px; font-weight: 800; letter-spacing: 0.16em; color: #1f5fae; }
+.head h1 { margin: 0; font-weight: 800; font-size: 40px; line-height: 1.02; letter-spacing: -0.02em; }
+.head p { margin: 0; font-size: 15px; line-height: 1.4; color: #3b4a78; }
 
-@media (min-width: 640px) {
-  .card { padding: 54px; }
-  .card h1 { font-size: 32px; }
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  --float-input-bg: #fff;
+  --float-border: #1b3478;
+  --float-color: #14285f;
+  --float-label: #3b4a78;
+  --float-label-active: #1f5fae;
+}
+/* SmoothButton candy con los azules del login */
+.form .submit { --btn: #2f5fb8; --btn-hover: #1b3478; width: 100%; height: 50px; margin-top: 4px; font-size: 16px; font-weight: 700; border-radius: 6px; }
+
+.links { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; }
+.links a { display: inline-flex; align-items: center; min-height: 44px; color: #1b3478; }
+.links a:hover { color: #14285f; }
+.strong { font-weight: 700; }
+
+.roleBlock { padding-top: 20px; border-top: 2px solid #1b3478; }
+.choose { margin: 0 0 12px; font-size: 14px; font-weight: 500; color: #3b4a78; }
+.roles { display: grid; grid-template-columns: 1fr; gap: 10px; }
+/* SmoothButton candy con los colores originales: azul sólido y blanco con borde */
+.roles .role { --btn: #1b3478; --btn-hover: #14285f; width: 100%; height: 46px; padding: 0 12px; font-size: 14px; font-weight: 700; border-radius: 6px; }
+.roles .roleAlt { --btn: #fff; --btn-hover: #e3eefa; --btn-fg: #1b3478; border: 2px solid #1b3478; text-shadow: none; }
+.footer { margin: 16px 0 0; font-size: 12px; color: #3b4a78; }
+
+.page :is(input, button, a):focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+
+@media (min-width: 761px) {
+  .slot { justify-content: flex-end; padding: 24px clamp(16px, 8vw, 120px); }
+}
+@media (min-width: 540px) {
   .roles { grid-template-columns: 1fr 1fr; }
 }
-@media (min-width: 960px) {
-  .page { grid-template-columns: 900px 1fr; }
-  .hero { padding: 72px 78px 40px; }
-  .panel { margin-left: -140px; position: relative; padding: 40px 32px; }
-}
-@media (max-width: 959px) {
-  .hero { padding-bottom: var(--space-5); }
-  .hint { display: none; }
+@media (max-width: 420px) {
+  .card { padding: 28px 20px; }
+  .head h1 { font-size: 34px; }
 }

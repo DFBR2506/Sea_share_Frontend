@@ -6,7 +6,7 @@
   scrollbar-width: none;
   border: 1px solid var(--seashare-color-border-default);
   border-radius: var(--radius-pill);
-  background: #f8fafc;
+  background: var(--seashare-color-line-faint);
   max-width: 100%;
 }
 .tabs::-webkit-scrollbar { display: none; }
