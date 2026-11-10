@@ -11,14 +11,6 @@
 }
 .control::placeholder { color: var(--seashare-color-text-secondary); }
 textarea.control { padding: var(--space-3) var(--space-4); resize: vertical; min-height: 80px; }
-select.control {
-  appearance: none;
-  padding-right: 40px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23666' stroke-width='1.5'%3E%3Cpath d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  cursor: pointer;
-}
 .control:disabled { background: var(--seashare-color-bg-default); color: var(--seashare-color-text-secondary); }
 .invalid { border-color: var(--seashare-color-brand-accent); }
 .error { font: var(--text-label); color: var(--seashare-color-brand-accent); }

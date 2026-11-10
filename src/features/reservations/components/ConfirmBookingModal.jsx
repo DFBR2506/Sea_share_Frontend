@@ -21,7 +21,7 @@ export function ConfirmBookingModal({ open, onClose, onContinue, boat, rangeLabe
       onClose={onClose}
       size="lg"
       title="CONFIRMA LOS DATOS DE TU RESERVA"
-      footer={<Button block onClick={submit} variant="secondary">Continuar a pagar</Button>}
+      footer={<Button block onClick={submit} variant="primary">Continuar a pagar</Button>}
     >
       <div className={styles.summary}>
         <div className={styles.thumb} />

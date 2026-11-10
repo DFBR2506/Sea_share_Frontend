@@ -25,11 +25,7 @@
 .drop small { font-weight: 400; font-size: 10px; }
 .drop input { display: none; }
 .footerBar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--seashare-color-line-soft); }
-.steps { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 700; color: var(--seashare-color-text-brand); }
-.step { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--seashare-color-brand-soft); font-size: 10px; }
-.stepActive { background: var(--seashare-color-brand-primary); color: #fff; }
-.stepDone { background: var(--seashare-color-success-bg); }
-.stepLine { width: 40px; height: 1px; background: var(--seashare-color-line-strong); }
+.stepperWrap { width: 340px; max-width: 100%; }
 .lockedWrap { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 
 /* Ficha del propietario */

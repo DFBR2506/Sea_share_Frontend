@@ -18,7 +18,7 @@ const patch = (id, changes) => {
 }
 
 export const updateVessel = (id, changes) => patch(id, changes)
-export const setMaintenance = (id, on) => patch(id, { status: on ? 'MANTENIMIENTO' : 'DISPONIBLE' })
+export const setMaintenance = (id, on, reason) => patch(id, { status: on ? 'MANTENIMIENTO' : 'DISPONIBLE', maintenanceReason: on ? reason : undefined })
 export const deleteVessel = (id) => {
   vessels = vessels.filter((v) => v.id !== id)
   return delay(true)

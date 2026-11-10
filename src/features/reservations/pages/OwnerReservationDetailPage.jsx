@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import boatIcon from '@/assets/icons/boat.svg'
 import { Button, StatusBadge } from '@/components/ui'
 import { cx } from '@/lib/cx'
 import { money } from '@/lib/dates'
@@ -10,6 +11,17 @@ import { HostCancelModal } from '../components/HostCancelModal'
 import { useBoat, useCancelByHost, useEndNavigation, useMarkNoShow, useOwnerReservation, useStartNavigation, useSubmitClaim } from '../hooks'
 import base from './pages.module.css'
 import styles from './owner.module.css'
+
+// Aún no hay fotos del barco: estado vacío en los tres espacios de la galería
+function Gallery() {
+  return (
+    <div className={styles.gallery} aria-label="Fotos del barco">
+      <div className={styles.empty}><img src={boatIcon} alt="" width="28" height="28" /><span>Sin fotos disponibles</span></div>
+      <div className={styles.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
+      <div className={styles.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
+    </div>
+  )
+}
 
 function Tiles({ items }) {
   return (
@@ -39,9 +51,9 @@ function Courtesy({ r, boat, onStart, onNoShow, busy }) {
       </section>
       <aside className={styles.actionsCard}>
         <h3>Acciones de embarque</h3>
-        <Button className={over ? styles.outlineBtn : styles.dark} onClick={onStart} disabled={busy}>Marcar inicio de la navegación</Button>
+        <Button className={styles.dark} onClick={onStart} disabled={busy}>Marcar inicio de la navegación</Button>
         <small>El cliente llegó{over ? ' tarde' : ''} y puede abordar</small>
-        <Button variant={over ? 'danger' : 'secondary'} disabled={!over || busy} onClick={onNoShow}>Marcar inasistencia</Button>
+        <Button className={styles.dark} disabled={!over || busy} onClick={onNoShow}>Marcar inasistencia</Button>
         <small>{over ? 'Cancela la reserva de forma definitiva' : `Disponible en ${formatMinSec(left)}`}</small>
       </aside>
     </div>
@@ -85,9 +97,9 @@ export default function OwnerReservationDetailPage() {
         </section>
         <aside className={styles.actionsCard}>
           <h3>Acciones de embarque</h3>
-          <Button className={styles.outlineBtn} onClick={() => start.mutate(r.id)} disabled={busy}>Marcar inicio de la navegación</Button>
+          <Button className={styles.dark} onClick={() => start.mutate(r.id)} disabled={busy}>Marcar inicio de la navegación</Button>
           <small>El cliente llegó tarde y puede abordar</small>
-          <Button variant="danger" onClick={() => noShow.mutate(r.id)} disabled={busy}>Marcar inasistencia</Button>
+          <Button className={styles.dark} onClick={() => noShow.mutate(r.id)} disabled={busy}>Marcar inasistencia</Button>
           <small>Cancela la reserva de forma definitiva</small>
         </aside>
       </div>
@@ -103,9 +115,9 @@ export default function OwnerReservationDetailPage() {
         </section>
         <aside className={styles.actionsCard}>
           <h3>Acciones de embarque</h3>
-          <Button variant="secondary" disabled>Marcar inicio de la navegación</Button>
+          <Button className={styles.dark} disabled>Marcar inicio de la navegación</Button>
           <small>Se habilita a las {r.embark.split(', ')[1]}</small>
-          <Button variant="secondary" disabled>Marcar inasistencia</Button>
+          <Button className={styles.dark} disabled>Marcar inasistencia</Button>
           <small>Se habilita 30 min después de la hora de salida</small>
         </aside>
       </div>
@@ -114,7 +126,7 @@ export default function OwnerReservationDetailPage() {
     status = (
       <div className={cx(styles.banner, styles.bannerGreen)}>
         <div>
-          <StatusBadge tone="neutral">En navegación</StatusBadge>
+          <StatusBadge tone="ongoing">En navegación</StatusBadge>
           <h2 className={styles.bannerTitle}>El viaje está en curso</h2>
           <p className={styles.small}><strong>Regreso pactado: {r.disembark} (hora del puerto de {boat.shortLocation})</strong> · Hora de salida real: <strong>{r.realDeparture}</strong></p>
         </div>
@@ -124,7 +136,7 @@ export default function OwnerReservationDetailPage() {
   } else if (r.status === 'COMPLETADA') {
     status = r.claim ? (
       <div className={cx(styles.banner, styles.bannerGrey)}>
-        <span style={{ fontSize: 16, color: 'var(--seashare-color-text-secondary)' }}>{r.claim.status === 'PENDIENTE' ? 'PENDIENTE' : r.claim.status}</span>
+        <span style={{ fontSize: 16, color: 'var(--seashare-color-brand-primary)' }}>{r.claim.status === 'PENDIENTE' ? 'PENDIENTE' : r.claim.status}</span>
         <div>
           <h2 className={styles.bannerTitle}>{r.claim.status === 'PENDIENTE' ? 'Tu reclamo está en revisión' : `Tu reclamo fue ${r.claim.status === 'ACEPTADO' ? 'aceptado' : 'rechazado'}`}</h2>
           <p className={styles.small}>Enviado el {r.claim.sentAt}. {r.claim.status === 'PENDIENTE' ? 'Un administrador revisará tu reporte.' : 'La decisión fue notificada a ambas partes.'}</p>
@@ -175,15 +187,15 @@ export default function OwnerReservationDetailPage() {
 
       <div className={styles.cols}>
         <div>
-          <div className={styles.gallery} aria-label="Fotos del barco"><div /><div /><div /></div>
-          <section className={base.panel}>
+          <Gallery />
+          <section className={cx(base.panel, styles.sheet)}>
             <h2>Itinerario</h2>
             <div className={base.lines}>
               {itinerary.map(([k, v]) => <div key={k} className={base.line}><span>{k}</span><span style={{ color: 'var(--seashare-color-text-primary)' }}>{v}</span></div>)}
             </div>
           </section>
           {r.claim && (
-            <section className={base.panel}>
+            <section className={cx(base.panel, styles.sheet)}>
               <h2>Tu reclamo</h2>
               <p className={styles.claimText}>“{r.claim.text}”</p>
               <p className={base.muted} style={{ marginTop: 8 }}>Registrado el {r.claim.sentAt}. Este texto es tu reclamo formal.</p>
@@ -191,14 +203,14 @@ export default function OwnerReservationDetailPage() {
           )}
         </div>
         <aside>
-          <section className={base.panel}>
+          <section className={cx(base.panel, styles.sheet)}>
             <h2>Cliente</h2>
             <div className={styles.client}>
               <span className={styles.avatar} />
               <div><strong>{r.guest}</strong><span>{r.guestTrips} viajes</span></div>
             </div>
           </section>
-          <section className={base.panel}>
+          <section className={cx(base.panel, styles.sheet)}>
             <span className={base.muted}>Resumen de pago</span>
             {r.status === 'COMPLETADA' && r.claim ? (
               <div className={base.lines} style={{ marginTop: 12 }}><div className={base.line}><span>Depósito de garantía</span><span>{money(BREAKDOWN.deposit)}</span></div></div>

@@ -40,21 +40,21 @@ function ParamsForm({ current, savedVersion, onSaved }) {
         <h2 className={local.h2}>Configuración editable</h2>
         <p className={local.sub}>Los cuatro valores se guardan como una única versión atómica.</p>
         <div className={local.grid}>
-          <Input label="Comisión de plataforma (%)" inputMode="decimal" value={form.commission} onChange={set('commission')} error={e('commission')} />
-          <Input label="Seguro náutico por pasajero (COP)" inputMode="numeric" value={form.insurance} onChange={set('insurance')} error={e('insurance')} />
-          <Input label="Incremento fin de semana (%)" inputMode="decimal" value={form.weekend} onChange={set('weekend')} error={e('weekend')} />
-          <Input label="Incremento temporada alta (%)" inputMode="decimal" value={form.highSeason} onChange={set('highSeason')} error={e('highSeason')} />
+          <Input caps label="Comisión de plataforma (%)" inputMode="decimal" value={form.commission} onChange={set('commission')} error={e('commission')} />
+          <Input caps label="Seguro náutico por pasajero (COP)" inputMode="numeric" value={form.insurance} onChange={set('insurance')} error={e('insurance')} />
+          <Input caps label="Incremento fin de semana (%)" inputMode="decimal" value={form.weekend} onChange={set('weekend')} error={e('weekend')} />
+          <Input caps label="Incremento temporada alta (%)" inputMode="decimal" value={form.highSeason} onChange={set('highSeason')} error={e('highSeason')} />
         </div>
         <h2 className={local.h2} style={{ marginTop: 32 }}>Datos calculados · solo lectura</h2>
         <div className={local.grid}>
-          <Input label="Depósito de garantía" value={DEPOSIT_NOTE} readOnly disabled />
-          <Input label="Ventanas de temporada alta" value={HIGH_SEASON_WINDOWS} readOnly disabled />
+          <Input caps label="Depósito de garantía" value={DEPOSIT_NOTE} readOnly disabled />
+          <Input caps label="Ventanas de temporada alta" value={HIGH_SEASON_WINDOWS} readOnly disabled />
         </div>
       </section>
       <div className={local.actions}>
         {saved && <span className={local.ok} role="status">Versión #{current.version} guardada</span>}
-        <Button variant="secondary" onClick={reset}>Cancelar</Button>
-        <Button variant="secondary" onClick={submit} disabled={save.isPending}>Guardar cambios</Button>
+        <Button variant="outline" square onClick={reset}>Cancelar</Button>
+        <Button variant="primary" square onClick={submit} disabled={save.isPending}>Guardar cambios</Button>
       </div>
     </>
   )
@@ -73,10 +73,6 @@ export default function FinanceParamsPage() {
           <h1 className={styles.title}>Parámetros financieros globales</h1>
           <p className={styles.lead}>Configura la versión vigente que utilizan los cálculos financieros de SeaShare.</p>
         </div>
-        <aside className={local.version}>
-          <span>VERSIÓN VIGENTE</span>
-          <strong>#{params.version} · Actualizada {params.updated}</strong>
-        </aside>
       </div>
       <ParamsForm key={params.version} current={params} savedVersion={savedVersion} onSaved={setSavedVersion} />
     </>

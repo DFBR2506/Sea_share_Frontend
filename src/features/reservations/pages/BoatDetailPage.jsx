@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
+import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
 import { formatFull, formatRange, nightsBetween, toISO } from '@/lib/dates'
 import { ConfirmBookingModal } from '../components/ConfirmBookingModal'
@@ -32,7 +33,7 @@ export default function BoatDetailPage() {
       <button type="button" className={styles.back} onClick={() => navigate('/explorar')}>‹ Volver a resultados</button>
       <div className={styles.detail}>
         <div>
-          <div className={styles.photo} role="img" aria-label="Foto del barco" />
+          <div className={styles.photo} role="img" aria-label="Foto del barco"><img src={boatIcon} alt="" width="36" height="36" /><span>Sin fotos disponibles</span></div>
           <h2 className={styles.h2}>Elige la fecha de tu viaje</h2>
           <p className={styles.hint}>Toca una fecha de inicio y luego una de fin para reservar varios días</p>
           <DateRangeCalendar value={range} onChange={setRange} />

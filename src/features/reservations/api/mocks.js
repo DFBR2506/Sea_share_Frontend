@@ -70,6 +70,6 @@ export const RESERVATIONS = [
 ]
 
 export const STATUS_UI = {
-  CONFIRMADA: { label: 'Confirmada', tone: 'success' },
-  CANCELADA: { label: 'Cancelada', tone: 'danger' },
+  CONFIRMADA: { label: 'Confirmada', tone: 'confirmed' },
+  CANCELADA: { label: 'Cancelada', tone: 'canceled' },
 }

@@ -1,0 +1,53 @@
+.stepper { position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6, 32px); }
+.item {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: var(--seashare-color-surface);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--seashare-color-text-secondary);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.item:disabled { cursor: default; }
+.item:focus-visible { outline: 2px solid var(--seashare-color-brand-support); outline-offset: 3px; border-radius: var(--radius-pill); }
+.active, .done { color: var(--seashare-color-text-brand); }
+.dot {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--seashare-color-brand-soft);
+  border: 1px solid var(--seashare-color-line-strong);
+  font-size: 10px;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s, transform 0.3s;
+}
+.active .dot { background: var(--seashare-color-brand-primary); border-color: var(--seashare-color-brand-primary); color: #fff; transform: scale(1.1); }
+.done .dot { background: var(--seashare-color-success-bg); border-color: var(--seashare-color-success-text); color: var(--seashare-color-success-text); }
+
+/* Línea de progreso entre pasos */
+.track { position: absolute; top: 50%; left: 12px; right: 12px; height: 2px; transform: translateY(-50%); border-radius: 2px; background: var(--seashare-color-line-strong); }
+.fill { width: 100%; height: 100%; border-radius: inherit; background: var(--seashare-color-brand-primary); transform-origin: left; transform: scaleX(var(--progress)); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.vertical { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: var(--space-6, 32px); }
+.vertical .track { top: 12px; bottom: 12px; left: 12px; right: auto; width: 2px; height: auto; transform: none; }
+.vertical .fill { transform-origin: top; transform: scaleY(var(--progress)); }
+
+/* Contenido con slide direccional */
+.content { animation: slideFromRight 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+.fromLeft { animation-name: slideFromLeft; }
+@keyframes slideFromRight { from { opacity: 0; transform: translateX(24px); } }
+@keyframes slideFromLeft { from { opacity: 0; transform: translateX(-24px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .content { animation: none; }
+  .fill, .dot, .item { transition: none; }
+  .active .dot { transform: none; }
+}

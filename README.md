@@ -69,7 +69,6 @@ Los datos mock viven en memoria: las acciones (cancelar, eliminar, retirar…) s
 | | `/owner/reservas`, `/owner/reservas/:id` | Reservas recibidas y flujo de embarque |
 | | `/owner/finanzas/balance` | Informe financiero (feature 013) |
 | | `/owner/finanzas/historial` | Registros financieros (feature 012) |
-| | `/owner/finanzas/cuentas` | Cuentas y retiro de fondos |
 | **Administrador** | `/admin` | Control general de flota |
 | | `/admin/embarcaciones/:id`, `/admin/propietarios/:id` | Detalle de embarcación y ficha del propietario |
 | | `/admin/disputas` | Resolución de disputas |

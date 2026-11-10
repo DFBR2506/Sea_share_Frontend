@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import boatIcon from '@/assets/icons/boat.svg'
 import { StatGrid } from '@/components/cards'
 import { Button } from '@/components/ui'
 import { money } from '@/lib/dates'
 import { CancelReservationModal } from '../components/CancelReservationModal'
 import { useBoat, useReservation } from '../hooks'
 import styles from './pages.module.css'
+import owner from './owner.module.css'
 
 export default function ReservationDetailPage() {
   const { reservationId } = useParams()
@@ -28,7 +30,11 @@ export default function ReservationDetailPage() {
           <h1 className={styles.title}>{boat.name}</h1>
           <p className={styles.muted}>{boat.location}</p>
           <p className={styles.muted}>{boat.passengers} pasajeros · {boat.cabins} camarotes · {boat.lengthM} m de eslora</p>
-          <div className={styles.gallery} aria-label="Fotos del barco"><div /><div /><div /></div>
+          <div className={owner.gallery} aria-label="Fotos del barco">
+            <div className={owner.empty}><img src={boatIcon} alt="" width="28" height="28" /><span>Sin fotos disponibles</span></div>
+            <div className={owner.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
+            <div className={owner.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
+          </div>
           <StatGrid items={[
             { value: boat.passengers, label: 'PASAJEROS' },
             { value: boat.captain ? 'Sí' : 'No', label: 'CAP. INCLUIDO' },
@@ -40,7 +46,7 @@ export default function ReservationDetailPage() {
             {boat.amenities.map((a) => <div key={a} className={styles.service}>{a}</div>)}
           </div>
           <p className={styles.muted} style={{ margin: '16px 0 0' }}>Anfitrión: {boat.host.name} · {boat.host.badge}</p>
-          <section className={`${styles.panel} ${styles.itinerary}`}>
+          <section className={`${styles.panel} ${styles.itinerary} ${owner.sheet}`}>
             <h2>Itinerario</h2>
             <div className={styles.lines}>
               <div className={styles.line}><span>Embarque</span><span>{res.embark}</span></div>
@@ -52,7 +58,7 @@ export default function ReservationDetailPage() {
         </div>
 
         <aside>
-          <section className={`${styles.panel} ${styles.paySummary}`}>
+          <section className={`${styles.panel} ${styles.paySummary} ${owner.sheet}`}>
             <span className={styles.muted}>Resumen de pago</span>
             <div className={styles.lines} style={{ margin: '12px 0' }}>
               <div className={styles.line}><span>Tarifa base</span><span>{money(b.base)}</span></div>

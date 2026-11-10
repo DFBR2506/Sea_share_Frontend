@@ -46,5 +46,4 @@ export const NAV_BY_ROLE = {
 export const OWNER_FINANCE_SUBNAV = [
   { to: '/owner/finanzas/balance', label: 'Balance General' },
   { to: '/owner/finanzas/historial', label: 'Historial de Pagos', shortLabel: 'Historial' },
-  { to: '/owner/finanzas/cuentas', label: 'Cuentas Retiro' },
 ]

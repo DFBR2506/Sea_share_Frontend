@@ -19,7 +19,6 @@ import OwnerReservationsPage from '@/features/reservations/pages/OwnerReservatio
 import FinanceParamsPage from '@/features/finance/pages/FinanceParamsPage'
 import FinanceRecordsPage from '@/features/finance/pages/FinanceRecordsPage'
 import FinanceReportPage from '@/features/finance/pages/FinanceReportPage'
-import OwnerAccountsPage from '@/features/finance/pages/OwnerAccountsPage'
 import RootRedirect from './RootRedirect'
 
 export const router = createBrowserRouter([
@@ -37,7 +36,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    element: <AppShell role="OWNER" tinted />,
+    element: <AppShell role="OWNER" />,
     children: [
       { path: '/owner/embarcaciones', element: <OwnerVesselsPage /> },
       { path: '/owner/embarcaciones/nueva', element: <VesselRegisterPage /> },
@@ -48,11 +47,10 @@ export const router = createBrowserRouter([
       { path: '/owner/finanzas', element: <Navigate to="/owner/finanzas/balance" replace /> },
       { path: '/owner/finanzas/balance', element: <FinanceReportPage scope="owner" /> },
       { path: '/owner/finanzas/historial', element: <FinanceRecordsPage scope="owner" /> },
-      { path: '/owner/finanzas/cuentas', element: <OwnerAccountsPage /> },
     ],
   },
   {
-    element: <AppShell role="ADMIN" tinted />,
+    element: <AppShell role="ADMIN" />,
     children: [
       { path: '/admin', element: <AdminFleetPage /> },
       { path: '/admin/embarcaciones/:vesselId', element: <VesselDetailPage mode="admin" /> },
@@ -61,7 +59,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    element: <AppShell role="FINADMIN" tinted />,
+    element: <AppShell role="FINADMIN" />,
     children: [
       { path: '/finadmin/parametros', element: <FinanceParamsPage /> },
       { path: '/finadmin/registros', element: <FinanceRecordsPage scope="admin" /> },

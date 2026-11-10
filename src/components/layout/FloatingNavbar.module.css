@@ -1,0 +1,70 @@
+.nav {
+  position: fixed;
+  left: 50%;
+  top: calc(64px + var(--space-3));
+  z-index: 40;
+  max-width: calc(100vw - 2 * var(--page-gutter));
+  transform: translateX(-50%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s;
+}
+.embedded { position: static; transform: none; max-width: 100%; box-shadow: none; }
+.embedded .list { overflow-x: auto; scrollbar-width: none; box-shadow: none; }
+.hidden { transform: translate(-50%, calc(-100% - 64px)); opacity: 0; pointer-events: none; }
+.list {
+  position: relative;
+  display: flex;
+  gap: var(--space-1);
+  padding: 6px;
+  border: 1px solid var(--seashare-color-line-soft);
+  border-radius: var(--radius-pill);
+  background: var(--seashare-color-surface);
+  box-shadow: var(--shadow-float);
+  transition: padding 0.3s, background 0.3s, backdrop-filter 0.3s;
+}
+.shrunk .list {
+  padding: 4px;
+  background: color-mix(in srgb, var(--seashare-color-surface) 78%, transparent);
+  backdrop-filter: blur(12px);
+}
+.indicator {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  border-radius: var(--radius-pill);
+  background: var(--seashare-color-brand-primary);
+  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.shrunk .indicator { top: 4px; bottom: 4px; }
+.item {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font: var(--text-body-medium);
+  color: var(--seashare-color-text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s, height 0.3s, padding 0.3s;
+}
+.shrunk .item { height: 34px; padding: 0 var(--space-3); }
+.item:hover:not(.active) { color: var(--seashare-color-brand-primary); }
+.item:focus-visible { outline: 2px solid var(--seashare-color-brand-primary); outline-offset: 2px; }
+.active { color: #fff; }
+.icon { width: 18px; height: 18px; }
+.active .icon { filter: brightness(0) invert(1); }
+
+@media (max-width: 767px) {
+  .item { padding: 0 var(--space-3); }
+  .item:not(.active) .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+@media (min-width: 768px) {
+  .nav { top: calc(72px + var(--space-3)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav, .list, .indicator, .item { transition: none; }
+}
