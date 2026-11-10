@@ -1,0 +1,37 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: var(--text-body-medium);
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.05s;
+}
+.primary { background: var(--seashare-color-brand-primary); color: #fff; }
+.primary:hover:not(:disabled) { background: var(--seashare-color-brand-primary-hover); }
+.primary:active:not(:disabled) { background: var(--seashare-color-brand-primary-active); transform: scale(0.98); }
+.secondary { background: var(--seashare-color-neutral-100); color: var(--seashare-color-text-primary); }
+.secondary:hover:not(:disabled) { background: var(--seashare-color-border-default); }
+.danger { background: var(--seashare-color-brand-accent); color: #fff; }
+.danger:hover:not(:disabled) { background: var(--seashare-color-danger-hover); }
+.button:disabled {
+  background: var(--seashare-color-line-soft);
+  color: var(--seashare-color-brand-mid);
+  cursor: not-allowed;
+}
+.outlineDanger { background: var(--seashare-color-surface); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); border-radius: var(--radius-sm); font-weight: 700; }
+.outlineDanger:hover:not(:disabled) { background: var(--seashare-color-danger-soft); }
+.square { border-radius: 10px; font-weight: 700; font-size: 13px; }
+.outline { background: var(--seashare-color-surface); color: var(--seashare-color-text-brand); border: 1px solid var(--seashare-color-line-soft); }
+.outline:hover:not(:disabled) { background: var(--seashare-color-brand-soft); }
+.warning { background: var(--seashare-color-warning-bg); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-warning-border); }
+.warning:hover:not(:disabled) { background: var(--seashare-color-warning-bg-strong); }
+.dangerSoft { background: var(--seashare-color-danger-soft); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); }
+.dangerSoft:hover:not(:disabled) { background: var(--seashare-color-danger-soft-strong); }
+.soft { background: var(--seashare-color-bg-default); color: var(--seashare-color-text-brand); }
+.soft:hover:not(:disabled) { background: var(--seashare-color-neutral-200); }
+.block { width: 100%; }

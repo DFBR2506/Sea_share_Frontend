@@ -1,0 +1,36 @@
+.header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; color: var(--seashare-color-text-brand); }
+.header h1 { margin: 0; font-size: clamp(22px, 3vw, 28px); font-weight: 700; }
+.header p { margin: 4px 0 0; font-size: 12px; }
+.tableCard { border-radius: 16px; background: var(--seashare-color-surface); overflow: hidden; box-shadow: var(--shadow-card); min-height: 320px; }
+.newTag { margin-left: 12px; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--seashare-color-brand-soft); font-size: 9px; font-weight: 700; }
+.link { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.link:hover { text-decoration: underline; }
+.filters { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+@media (min-width: 768px) { .filters { grid-template-columns: 220px 180px 1fr; } .filters > :last-child { max-width: 420px; justify-self: end; width: 100%; } }
+.filters select, .filters input { background: var(--seashare-color-surface); }
+
+/* Formularios */
+.formGrid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 960px) { .formGrid.split { grid-template-columns: 320px 1fr; gap: 32px; } }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.two { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 560px) { .two { grid-template-columns: 1fr 1fr; } }
+.sectionLabel { margin: 4px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--seashare-color-text-brand); }
+.hintText { margin: -4px 0 8px; font-size: 11px; color: var(--seashare-color-text-brand); }
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px 24px; }
+.chips { display: flex; flex-wrap: wrap; gap: 12px; }
+.photoBox { position: relative; aspect-ratio: 1 / 0.7; border-radius: 12px; background: var(--seashare-color-brand-primary); display: grid; place-items: center; }
+.photoBtn { padding: 10px 18px; border: 0; border-radius: 6px; background: var(--seashare-color-brand-soft); font-size: 11px; font-weight: 700; color: var(--seashare-color-text-brand); cursor: pointer; }
+.drop { display: grid; place-items: center; gap: 4px; padding: 32px 16px; border: 1px dashed var(--seashare-color-line-strong); border-radius: 12px; font-size: 12px; font-weight: 700; text-align: center; cursor: pointer; color: var(--seashare-color-text-brand); }
+.drop small { font-weight: 400; font-size: 10px; }
+.drop input { display: none; }
+.footerBar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--seashare-color-line-soft); }
+.stepperWrap { width: 340px; max-width: 100%; }
+.lockedWrap { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+
+/* Ficha del propietario */
+.ownerHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--seashare-color-line-soft); }
+.ownerWho { display: flex; align-items: center; gap: 20px; }
+.bigAvatar { display: grid; place-items: center; width: 60px; height: 60px; border: 2px solid var(--seashare-color-brand-primary); border-radius: 50%; background: var(--seashare-color-brand-soft); font-size: 20px; font-weight: 700; }
+.ownerWho h1 { margin: 0; font-size: 24px; }
+.ownerWho p { margin: 2px 0 0; font-size: 11px; }

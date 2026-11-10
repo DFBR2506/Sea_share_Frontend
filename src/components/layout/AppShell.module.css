@@ -1,0 +1,4 @@
+.content { max-width: 1440px; margin: 0 auto; padding: var(--space-5) var(--page-gutter) var(--space-6); }
+.inner { max-width: 1280px; margin: 0 auto; }
+.owner { max-width: none; min-height: calc(100dvh - 72px); background: var(--seashare-color-brand-soft); }
+.withFloat { padding-top: 96px; }

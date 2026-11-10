@@ -1,0 +1,110 @@
+.btn {
+  --gap: 8px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+  box-sizing: border-box;
+  border: 0;
+  font-family: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:focus-visible { box-shadow: 0 0 0 2px var(--seashare-color-surface), 0 0 0 4px var(--seashare-color-brand-support); }
+.btn:disabled {
+  pointer-events: none;
+  background: var(--seashare-color-neutral-100);
+  color: var(--seashare-color-text-secondary);
+  box-shadow: none;
+  background-image: none;
+  border-color: transparent;
+}
+.btn svg { pointer-events: none; flex-shrink: 0; }
+
+/* Tono por defecto: neutral; candy usa la marca */
+.solid, .soft, .outline, .ghost, .link {
+  --btn: var(--seashare-color-ink);
+  --btn-hover: color-mix(in srgb, var(--seashare-color-ink) 80%, white);
+  --btn-fg: #fff;
+}
+.candy {
+  --btn: var(--seashare-color-brand-primary);
+  --btn-hover: var(--seashare-color-brand-primary-hover);
+  --btn-fg: #fff;
+}
+
+/* Tonos (después de los defaults para poder sobrescribirlos) */
+.color-accent { --btn: var(--seashare-color-brand-primary); --btn-hover: var(--seashare-color-brand-primary-hover); --btn-fg: #fff; }
+.color-neutral { --btn: var(--seashare-color-ink); --btn-hover: color-mix(in srgb, var(--seashare-color-ink) 80%, white); --btn-fg: #fff; }
+.color-destructive { --btn: var(--seashare-color-brand-accent); --btn-hover: var(--seashare-color-danger-hover); --btn-fg: #fff; }
+.color-blue { --btn: var(--color-3); --btn-hover: var(--color-4); --btn-fg: #fff; }
+.color-amber { --btn: var(--color-2); --btn-hover: color-mix(in srgb, var(--color-2) 80%, black); --btn-fg: var(--seashare-color-ink); }
+.color-green { --btn: var(--seashare-color-success-text); --btn-hover: color-mix(in srgb, var(--seashare-color-success-text) 80%, black); --btn-fg: #fff; }
+
+/* Variantes */
+.solid { background: var(--btn); color: var(--btn-fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+.solid:hover:not(:disabled) { background: var(--btn-hover); }
+.soft { background: color-mix(in srgb, var(--btn) 12%, transparent); color: var(--btn); }
+.soft:hover:not(:disabled) { background: color-mix(in srgb, var(--btn) 18%, transparent); }
+.outline {
+  background: var(--seashare-color-surface);
+  color: var(--btn);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 0 0 1px color-mix(in srgb, var(--btn) 14%, transparent);
+}
+.outline:hover:not(:disabled) { background: var(--seashare-color-bg-default); }
+.ghost { background: transparent; color: var(--btn); }
+.ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--btn) 10%, transparent); }
+.link { background: transparent; color: var(--btn); text-underline-offset: 4px; }
+.link:hover:not(:disabled) { text-decoration: underline; }
+.candy {
+  border: 0.5px solid rgb(255 255 255 / 0.25);
+  background-image: linear-gradient(to bottom, var(--btn), var(--btn-hover));
+  color: var(--btn-fg);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  box-shadow: 0 4px 6px rgb(0 0 0 / 0.2), 0 0 0 1px color-mix(in srgb, #000 15%, var(--btn));
+}
+.candy:hover:not(:disabled) { background-image: linear-gradient(to bottom, var(--btn-hover), var(--btn-hover)); }
+.candy svg { filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25)); }
+
+/* Tamaños */
+.size-default { height: 40px; padding: 0 16px; border-radius: 6px; font-size: 14px; }
+.size-lg { height: 44px; padding: 0 32px; border-radius: 8px; font-size: 16px; }
+.size-sm { --gap: 6px; height: 36px; padding: 0 12px; border-radius: 6px; font-size: 14px; }
+.size-xs { --gap: 6px; height: 28px; padding: 0 10px; border-radius: 4px; font-size: 12px; }
+.size-icon { width: 40px; height: 40px; border-radius: 6px; }
+.size-icon-sm { width: 36px; height: 36px; border-radius: 6px; }
+.size-icon-lg { width: 44px; height: 44px; border-radius: 8px; }
+.size-default svg, .size-sm svg, .size-icon svg, .size-icon-sm svg { width: 16px; height: 16px; }
+.size-lg svg, .size-icon-lg svg { width: 20px; height: 20px; }
+.size-xs svg { width: 14px; height: 14px; }
+
+/* Formas */
+.shape-pill { border-radius: 999px; }
+.shape-square { border-radius: 0; }
+
+/* Spinner: crece en ancho sin saltos de layout (el margen negativo anula el gap) */
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 0;
+  margin-right: calc(var(--gap) * -1);
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.25s ease, margin-right 0.25s ease, opacity 0.25s ease;
+}
+.spinning { width: 1em; margin-right: 0; opacity: 1; }
+.spinnerIcon { width: 1em !important; height: 1em !important; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .spinner { transition: none; }
+  .btn:active:not(:disabled) { transform: none; }
+  .spinnerIcon { animation-duration: 2s; }
+}
