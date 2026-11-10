@@ -3,7 +3,7 @@ import { Button, Modal } from '@/components/ui'
 const ICONS = { danger: '✕', warning: '!' }
 
 /** Diálogo de confirmación centrado (eliminar, mantenimiento, descartar…). */
-export function ConfirmDialog({ open, onClose, onConfirm, tone = 'danger', title, children, cancelLabel = 'Cancelar', confirmLabel = 'Sí, continuar', loading = false }) {
+export function ConfirmDialog({ open, onClose, onConfirm, tone = 'danger', title, children, cancelLabel = 'Cancelar', confirmLabel = 'Sí, continuar', loading = false, confirmDisabled = false }) {
   return (
     <Modal
       open={open}
@@ -15,7 +15,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, tone = 'danger', title
       footer={
         <>
           <Button variant="soft" square onClick={onClose}>{cancelLabel}</Button>
-          <Button variant="danger" square onClick={onConfirm} disabled={loading}>{confirmLabel}</Button>
+          <Button variant="danger" square onClick={onConfirm} disabled={loading || confirmDisabled}>{confirmLabel}</Button>
         </>
       }
     >

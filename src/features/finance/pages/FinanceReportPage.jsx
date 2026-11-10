@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FinancialSummary } from '@/components/cards'
-import { Button, Dropdown } from '@/components/ui'
+import downloadIcon from '@/assets/icons/download.svg'
+import { Dropdown, SlideButton, SlidingTabs } from '@/components/ui'
 import { millions } from '@/lib/dates'
 import { listPeriods } from '../api'
 import { TYPE_LABEL } from '../api/mocks'
@@ -44,17 +45,13 @@ export default function FinanceReportPage({ scope }) {
         <div className={styles.panelRow}>
           <div>
             <span className={styles.fieldLabel}>Periodicidad</span>
-            <div className={styles.chips} role="group" aria-label="Periodicidad">
-              {PERIODICITY.map((o) => (
-                <button key={o.value} type="button" className={styles.chip} aria-pressed={periodicity === o.value} onClick={() => changePeriodicity(o.value)}>{o.label}</button>
-              ))}
-            </div>
+            <SlidingTabs ariaLabel="Periodicidad" items={PERIODICITY} value={periodicity} onChange={changePeriodicity} />
           </div>
           <div style={{ width: 220 }}>
             <Dropdown label="Período" options={periods.map((p) => ({ value: p, label: p }))} value={period || periods[0]} onChange={(e) => setPeriod(e.target.value)} />
           </div>
         </div>
-        <Button variant="secondary" disabled={!r} onClick={() => downloadCsv(r, scope)}>Exportar CSV</Button>
+        <SlideButton icon={downloadIcon} disabled={!r} onClick={() => downloadCsv(r, scope)}>Exportar CSV</SlideButton>
       </div>
 
       {isPending ? <p className={styles.empty}>Cargando…</p> : (

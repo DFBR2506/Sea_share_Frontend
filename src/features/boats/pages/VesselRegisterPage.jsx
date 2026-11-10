@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackButton, PageCard, PageCardHead } from '@/components/layout'
 import { ConfirmDialog } from '@/components/modals'
-import { Button, Checkbox, Chip, Dropdown, Input } from '@/components/ui'
-import { cx } from '@/lib/cx'
+import { AnimatedStepper, Button, Checkbox, Chip, Dropdown, Input, StepContent, useStepDirection } from '@/components/ui'
 import { MapPlaceholder } from '../components/MapPlaceholder'
 import { BOAT_TYPES, MANDATORY_SERVICES, SERVICE_OPTIONS } from '../api/mocks'
 import { useCreateVessel } from '../hooks'
@@ -11,20 +10,13 @@ import styles from './pages.module.css'
 
 const DEFAULT_PORT = { name: 'Marina Fluvial Magdalena (Muelle Principal)', lat: '10.7452° N', long: '74.7891° O' }
 
-function Stepper({ step }) {
-  return (
-    <div className={styles.steps} aria-label={`Paso ${step} de 2`}>
-      <span><span className={cx(styles.step, step === 1 ? styles.stepActive : styles.stepDone)}>{step === 1 ? '1' : '✓'}</span>Datos Básicos</span>
-      <span className={styles.stepLine} />
-      <span><span className={cx(styles.step, step === 2 && styles.stepActive)}>2</span>Datos Complementarios</span>
-    </div>
-  )
-}
+const STEPS = [{ label: 'Datos Básicos' }, { label: 'Datos Complementarios' }]
 
 export default function VesselRegisterPage() {
   const navigate = useNavigate()
   const create = useCreateVessel()
   const [step, setStep] = useState(1)
+  const direction = useStepDirection(step)
   const [touched, setTouched] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [fileName, setFileName] = useState('')
@@ -46,6 +38,11 @@ export default function VesselRegisterPage() {
     setTouched(false)
     setStep(2)
   }
+  const goTo = (index) => {
+    if (index + 1 > step) return next()
+    setTouched(false)
+    setStep(index + 1)
+  }
   const save = () => {
     setTouched(true)
     if (Object.values(errors2).some(Boolean)) return
@@ -62,9 +59,10 @@ export default function VesselRegisterPage() {
         <PageCardHead
           title="Registrar Nueva Embarcación"
           subtitle={step === 1 ? 'Paso 1 de 2: Información general y datos legales del vehículo fluvial.' : 'Paso 2 de 2: Puerto de atraque, tarifa, servicios y fotografía oficial.'}
-          actions={<Stepper step={step} />}
+          actions={<AnimatedStepper className={styles.stepperWrap} steps={STEPS} currentStep={step - 1} onStepChange={goTo} />}
         />
 
+        <StepContent step={step} direction={direction}>
         {step === 1 ? (
           <div className={styles.stack}>
             <Input caps label="Nombre de la embarcación" placeholder="Ej. Río Magdalena II" value={form.name} onChange={set('name')} error={touched && errors1.name} />
@@ -106,6 +104,7 @@ export default function VesselRegisterPage() {
             </div>
           </div>
         )}
+        </StepContent>
 
         <div className={styles.footerBar}>
           <Button variant="soft" square onClick={() => setCancelling(true)}>Cancelar</Button>
@@ -120,7 +119,7 @@ export default function VesselRegisterPage() {
         tone="warning"
         title="¿Cancelar registro?"
         cancelLabel="Seguir registrando"
-        confirmLabel="Sí, cancelar"
+        confirmLabel="Cancelar"
         onConfirm={() => navigate('/owner/embarcaciones')}
       >
         <span style={{ fontSize: 12 }}>Perderás los datos ingresados hasta ahora.</span>

@@ -1,8 +1,8 @@
-.calendar { padding: var(--space-5) 24px 16px; border-radius: var(--radius-md); background: var(--seashare-color-surface); max-width: 440px; }
+.calendar { border: 1px solid var(--seashare-color-line-soft); padding: var(--space-5) 24px 16px; border-radius: var(--radius-md); background: var(--seashare-color-surface); max-width: 440px; }
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); font-size: 16px; color: var(--seashare-color-text-brand); }
 .head span { font-weight: 400; }
 .nav { display: flex; gap: var(--space-2); }
-.navBtn { width: 32px; height: 32px; border: 1px solid var(--seashare-color-border-default); border-radius: 50%; background: var(--seashare-color-surface); cursor: pointer; color: var(--seashare-color-text-brand); }
+.navBtn { width: 32px; height: 32px; border: 1px solid var(--seashare-color-line-soft); border-radius: 50%; background: var(--seashare-color-surface); cursor: pointer; color: var(--seashare-color-text-brand); }
 .navBtn:disabled { opacity: 0.35; cursor: not-allowed; }
 .grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; text-align: center; }
 .dow { padding: 6px 0; font: var(--text-label); font-size: 11px; color: var(--seashare-color-text-secondary); }
@@ -14,8 +14,8 @@
 .inRange.first { border-radius: 19px 0 0 19px; }
 .inRange.last { border-radius: 0 19px 19px 0; }
 .inRange.first.last { border-radius: 19px; }
-.edge > span { background: var(--seashare-color-neutral-300); }
-.today > span { border: 2px solid var(--seashare-color-gold); }
+.edge > span { background: var(--seashare-color-brand-primary); color: #fff; }
+.today > span { border: 2px solid var(--seashare-color-brand-support); }
 .cell:focus-visible > span { outline: 2px solid var(--seashare-color-brand-support); }
-.legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--seashare-color-border-default); font: var(--text-label); font-weight: 400; color: var(--seashare-color-text-secondary); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--seashare-color-line-soft); font: var(--text-label); font-weight: 400; color: var(--seashare-color-text-secondary); }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }

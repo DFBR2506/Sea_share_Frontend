@@ -1,3 +1,4 @@
+import boatIcon from '@/assets/icons/boat.svg'
 import { Button } from '@/components/ui'
 import styles from './BoatCard.module.css'
 
@@ -5,7 +6,7 @@ import styles from './BoatCard.module.css'
 export function BoatCard({ name, meta, price, imageUrl, actionLabel = 'Reservar', actionVariant = 'primary', onAction, onClick }) {
   return (
     <article className={styles.card} onClick={onClick}>
-      {imageUrl ? <img src={imageUrl} alt={name} className={styles.image} /> : <div className={styles.image} role="img" aria-label="Foto del barco" />}
+      {imageUrl ? <img src={imageUrl} alt={name} className={styles.image} /> : <div className={styles.image} role="img" aria-label="Foto del barco"><img src={boatIcon} alt="" width="32" height="32" /><span>Sin fotos disponibles</span></div>}
       <h3 className={styles.name}>{name}</h3>
       <p className={styles.meta}>{meta}</p>
       <div className={styles.footer}>

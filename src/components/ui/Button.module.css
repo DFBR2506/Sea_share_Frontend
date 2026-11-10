@@ -19,8 +19,8 @@
 .danger { background: var(--seashare-color-brand-accent); color: #fff; }
 .danger:hover:not(:disabled) { background: var(--seashare-color-danger-hover); }
 .button:disabled {
-  background: var(--seashare-color-disabled);
-  color: var(--seashare-color-text-secondary);
+  background: var(--seashare-color-line-soft);
+  color: var(--seashare-color-brand-mid);
   cursor: not-allowed;
 }
 .outlineDanger { background: var(--seashare-color-surface); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-brand-accent); border-radius: var(--radius-sm); font-weight: 700; }

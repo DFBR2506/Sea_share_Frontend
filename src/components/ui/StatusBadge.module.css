@@ -9,4 +9,9 @@
 .success { background: var(--seashare-color-brand-soft); color: var(--seashare-color-text-brand); }
 .neutral { background: var(--seashare-color-neutral-100); color: var(--seashare-color-text-secondary); }
 .warning { background: var(--seashare-color-warning-bg); color: var(--seashare-color-warning-text); }
+.pending { border: 1px solid var(--seashare-color-text-brand); background: var(--seashare-status-pending-bg); color: var(--seashare-status-pending-text); }
+.confirmed { border: 1px solid var(--seashare-color-text-brand); background: var(--seashare-status-confirmed-bg); color: var(--seashare-status-confirmed-text); }
+.ongoing { border: 1px solid var(--seashare-color-text-brand); background: var(--seashare-status-ongoing-bg); color: var(--seashare-status-ongoing-text); }
+.completed { border: 1px solid var(--seashare-color-text-brand); background: var(--seashare-status-completed-bg); color: var(--seashare-status-completed-text); }
+.canceled { border: 1px solid var(--seashare-color-text-brand); background: var(--seashare-status-canceled-bg); color: var(--seashare-status-canceled-text); }
 .danger { background: var(--seashare-color-danger-soft); color: var(--seashare-color-brand-accent); }

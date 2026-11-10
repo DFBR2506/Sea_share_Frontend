@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import closeIcon from '@/assets/icons/close.svg'
 import { cx } from '@/lib/cx'
@@ -8,6 +8,16 @@ import styles from './Modal.module.css'
 export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', size = 'md', variant = 'default', children, footer }) {
   const titleId = useId()
   const dialogRef = useRef(null)
+  // Mantiene el diálogo montado mientras corre la animación de salida.
+  const [mounted, setMounted] = useState(open)
+  const closing = mounted && !open
+  if (open && !mounted) setMounted(true)
+
+  useEffect(() => {
+    if (open) return
+    const timer = setTimeout(() => setMounted(false), 300)
+    return () => clearTimeout(timer)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -15,19 +25,23 @@ export function Modal({ open, onClose, title, subtitle, icon, tone = 'default', 
     dialogRef.current?.focus()
     const onKey = (e) => e.key === 'Escape' && onClose?.()
     document.addEventListener('keydown', onKey)
-    const { overflow } = document.body.style
+    const { overflow, paddingRight } = document.body.style
+    // Compensa el ancho de la barra de scroll para que el fondo no se desplace al abrir.
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth
     document.body.style.overflow = 'hidden'
+    if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = overflow
+      document.body.style.paddingRight = paddingRight
       previous?.focus?.()
     }
   }, [open, onClose])
 
-  if (!open) return null
+  if (!open && !mounted) return null
 
   return createPortal(
-    <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <div className={cx(styles.overlay, closing && styles.closing)} onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div
         ref={dialogRef}
         role="dialog"

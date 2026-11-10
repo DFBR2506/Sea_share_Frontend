@@ -31,7 +31,7 @@ export default function ExplorePage() {
             name={b.name}
             meta={`${b.shortLocation} · ${b.passengers} pasajeros · ${b.captain ? 'Capitán incluido' : 'Sin capitán'}`}
             price={`${moneyInt(b.pricePerDay).replace(/^/, '')} / día`}
-            actionVariant="secondary"
+            actionVariant="primary"
             onAction={() => navigate(`/explorar/${b.id}`)}
             onClick={() => navigate(`/explorar/${b.id}`)}
           />

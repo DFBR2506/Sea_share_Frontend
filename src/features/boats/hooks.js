@@ -15,6 +15,6 @@ function useVesselMutation(fn) {
 }
 
 export const useUpdateVessel = () => useVesselMutation(({ id, changes }) => api.updateVessel(id, changes))
-export const useSetMaintenance = () => useVesselMutation(({ id, on }) => api.setMaintenance(id, on))
+export const useSetMaintenance = () => useVesselMutation(({ id, on, reason }) => api.setMaintenance(id, on, reason))
 export const useDeleteVessel = () => useVesselMutation((id) => api.deleteVessel(id))
 export const useCreateVessel = () => useVesselMutation((data) => api.createVessel(data))

@@ -14,11 +14,11 @@ export const OWNER_RESERVATIONS = [
 export const BREAKDOWN = { base: 750, commission: 150, insurance: 40, deposit: 200, net: 1040 }
 
 export const RESERVATION_STATUS_UI = {
-  CONFIRMADA: { label: 'Confirmada', tone: 'success' },
-  EN_NAVEGACION: { label: 'En navegación', tone: 'warning' },
-  PENDIENTE_PAGO: { label: 'Pendiente de pago', tone: 'neutral' },
-  CANCELADA: { label: 'Cancelada', tone: 'danger' },
-  COMPLETADA: { label: 'Completada', tone: 'success' },
+  CONFIRMADA: { label: 'Confirmada', tone: 'confirmed' },
+  EN_NAVEGACION: { label: 'En navegación', tone: 'ongoing' },
+  PENDIENTE_PAGO: { label: 'Pendiente de pago', tone: 'pending' },
+  CANCELADA: { label: 'Cancelada', tone: 'canceled' },
+  COMPLETADA: { label: 'Completada', tone: 'completed' },
 }
 
 // Disputas precargadas (más las que cree el propietario al reportar un reclamo)

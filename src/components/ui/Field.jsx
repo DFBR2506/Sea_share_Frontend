@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import { cx } from '@/lib/cx'
+import { Select } from './Select'
 import styles from './Field.module.css'
 
 function Field({ id, label, error, caps, render, ...props }) {
@@ -22,17 +23,7 @@ export function Textarea(props) {
   return <Field {...props} render={(p) => <textarea {...p} />} />
 }
 
-/** Dropdown basado en <select> nativo: accesible y con picker móvil. options: [{value,label}] */
+/** Dropdown con el componente Select (listbox accesible). options: [{value,label}] o agrupadas [{label,options}] */
 export function Dropdown({ options, placeholder, ...props }) {
-  return (
-    <Field
-      {...props}
-      render={(p) => (
-        <select {...p}>
-          {placeholder && <option value="">{placeholder}</option>}
-          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      )}
-    />
-  )
+  return <Field {...props} render={(p) => <Select {...p} options={options} placeholder={placeholder} />} />
 }

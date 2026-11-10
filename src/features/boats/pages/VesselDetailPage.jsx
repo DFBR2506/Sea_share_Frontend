@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { BackButton, PageCard, PageCardHead } from '@/components/layout'
 import { ConfirmDialog } from '@/components/modals'
-import { Button, StatusPill } from '@/components/ui'
+import trashIcon from '@/assets/icons/trash.svg'
+import wrenchIcon from '@/assets/icons/wrench.svg'
+import { Button, SlideButton, StatusPill, Textarea } from '@/components/ui'
 import { VesselDetailView } from '../components/VesselDetailView'
 import { STATUS_UI } from '../api/mocks'
 import { useDeleteVessel, useSetMaintenance, useVessel } from '../hooks'
@@ -15,6 +17,7 @@ export default function VesselDetailPage({ mode }) {
   const maintenance = useSetMaintenance()
   const remove = useDeleteVessel()
   const [dialog, setDialog] = useState(null) // 'maintenance' | 'delete'
+  const [reason, setReason] = useState('')
 
   const base = mode === 'owner' ? '/owner/embarcaciones' : '/admin'
   if (isPending) return <p>Cargando…</p>
@@ -33,8 +36,8 @@ export default function VesselDetailPage({ mode }) {
           actions={
             <>
               {mode === 'owner' && <Button variant="outline" square onClick={() => navigate(`${base}/${vessel.id}/editar`)}>Editar</Button>}
-              <Button variant="warning" square onClick={() => setDialog('maintenance')}>{inMaintenance ? 'Terminar mantenimiento' : 'Enviar a Mantenimiento'}</Button>
-              <Button variant="dangerSoft" square onClick={() => setDialog('delete')}>Eliminar</Button>
+              <SlideButton icon={wrenchIcon} tone="warning" onClick={() => { setReason(''); setDialog('maintenance') }}>{inMaintenance ? 'Terminar mantenimiento' : 'Enviar a Mantenimiento'}</SlideButton>
+              <SlideButton icon={trashIcon} tone="danger" onClick={() => setDialog('delete')}>Eliminar</SlideButton>
             </>
           }
         />
@@ -52,11 +55,22 @@ export default function VesselDetailPage({ mode }) {
         cancelLabel="Cancelar"
         confirmLabel={inMaintenance ? 'Sí, terminar' : 'Sí, enviar'}
         loading={maintenance.isPending}
-        onConfirm={() => maintenance.mutate({ id: vessel.id, on: !inMaintenance }, { onSuccess: () => setDialog(null) })}
+        confirmDisabled={!inMaintenance && !reason.trim()}
+        onConfirm={() => maintenance.mutate({ id: vessel.id, on: !inMaintenance, reason: reason.trim() }, { onSuccess: () => setDialog(null) })}
       >
         <span style={{ fontSize: 12 }}>
           {inMaintenance ? 'La embarcación volverá a recibir reservas.' : 'La embarcación no recibirá reservas temporalmente.'}
         </span>
+        {!inMaintenance && (
+          <Textarea
+            label="Razón del mantenimiento"
+            placeholder="Ej. Revisión del motor, pintura del casco…"
+            rows={3}
+            maxLength={300}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        )}
       </ConfirmDialog>
 
       <ConfirmDialog

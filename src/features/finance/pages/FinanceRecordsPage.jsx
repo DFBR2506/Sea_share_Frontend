@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Dropdown, Input } from '@/components/ui'
+import { Dropdown, Input, Pagination } from '@/components/ui'
 import { FilterChips } from '../components/FilterChips'
-import { Pagination } from '../components/Pagination'
 import { RecordsTable } from '../components/RecordsTable'
 import { OWNER_ID, OWNERS, TYPE_LABEL } from '../api/mocks'
 import { useRecords } from '../hooks'
@@ -42,7 +41,7 @@ export default function FinanceRecordsPage({ scope }) {
       {data && (
         <>
           <RecordsTable rows={data.items} />
-          <Pagination page={page} pageSize={pageSize} total={data.total} onPage={setPage} />
+          <Pagination page={page} totalPages={Math.ceil(data.total / pageSize)} onPageChange={setPage} total={data.total} pageSize={pageSize} />
         </>
       )}
     </>
