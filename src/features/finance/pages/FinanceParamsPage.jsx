@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { Button, Input } from '@/components/ui'
-import { DEPOSIT_NOTE, HIGH_SEASON_WINDOWS } from '../api/mocks'
 import { useParams3, useSaveParams } from '../hooks'
 import styles from '../components/FinanceUI.module.css'
 import local from './params.module.css'
 
+const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+// 'MM-dd→MM-dd' → '15 nov → 15 ene'; 'semana-santa' → 'Semana Santa'
+const formatWindow = (w) => {
+  if (w === 'semana-santa') return 'Semana Santa'
+  return w.split('→').map((d) => { const [m, day] = d.split('-'); return `${Number(day)} ${MONTHS[Number(m) - 1]}` }).join(' → ')
+}
+
 function ParamsForm({ current, savedVersion, onSaved }) {
   const save = useSaveParams()
-  const toForm = (p) => ({ commission: String(p.commission), insurance: String(p.insurance), weekend: String(p.weekend), highSeason: String(p.highSeason) })
+  const toForm = (p) => ({ commission: String(p?.commission ?? ''), insurance: String(p?.insurance ?? ''), weekend: String(p?.weekend ?? ''), highSeason: String(p?.highSeason ?? '') })
   const [form, setForm] = useState(toForm(current))
   const [touched, setTouched] = useState(false)
   const [edited, setEdited] = useState(false)
-  const saved = savedVersion === current.version && !edited
+  const saved = savedVersion === current?.version && !edited
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setEdited(true) }
 
   const pct = (v) => (v === '' || Number.isNaN(Number(v)) || Number(v) < 0 || Number(v) > 100) && 'Ingresa un porcentaje entre 0 y 100'
@@ -47,8 +53,8 @@ function ParamsForm({ current, savedVersion, onSaved }) {
         </div>
         <h2 className={local.h2} style={{ marginTop: 32 }}>Datos calculados · solo lectura</h2>
         <div className={local.grid}>
-          <Input caps label="Depósito de garantía" value={DEPOSIT_NOTE} readOnly disabled />
-          <Input caps label="Ventanas de temporada alta" value={HIGH_SEASON_WINDOWS} readOnly disabled />
+          <Input caps label="Depósito de garantía" value={current?.depositRule ?? '—'} readOnly disabled />
+          <Input caps label="Ventanas de temporada alta" value={current?.highSeasonWindows?.map(formatWindow).join(' · ') ?? '—'} readOnly disabled />
         </div>
       </section>
       <div className={local.actions}>
@@ -62,9 +68,10 @@ function ParamsForm({ current, savedVersion, onSaved }) {
 
 /** Parámetros financieros globales (feature 011). */
 export default function FinanceParamsPage() {
-  const { data: params, isPending } = useParams3()
+  const { data: params, isPending, isError, error } = useParams3()
   const [savedVersion, setSavedVersion] = useState(null)
   if (isPending) return <p className={styles.empty}>Cargando…</p>
+  if (isError) return <p className={styles.empty} role="alert">{error.message}</p>
   return (
     <>
       <div className={local.head}>
@@ -74,7 +81,8 @@ export default function FinanceParamsPage() {
           <p className={styles.lead}>Configura la versión vigente que utilizan los cálculos financieros de SeaShare.</p>
         </div>
       </div>
-      <ParamsForm key={params.version} current={params} savedVersion={savedVersion} onSaved={setSavedVersion} />
+      {!params && <p className={styles.lead} role="status">Aún no hay parámetros configurados: ingresa los valores para crear la primera versión.</p>}
+      <ParamsForm key={params?.version ?? 'none'} current={params} savedVersion={savedVersion} onSaved={setSavedVersion} />
     </>
   )
 }
