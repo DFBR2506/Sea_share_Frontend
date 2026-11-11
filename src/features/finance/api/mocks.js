@@ -35,10 +35,6 @@ export const REPORTS = {
 }
 export const PERIODS = { QUINCENAL: ['1ª quincena sep 2026', '2ª quincena ago 2026'], MENSUAL: ['Septiembre 2026', 'Agosto 2026', 'Julio 2026'], TRIMESTRAL: ['3T 2026', '2T 2026'] }
 
-export const INITIAL_PARAMS = { version: 12, commission: 12, insurance: 18000, weekend: 8, highSeason: 15, updated: 'hoy' }
-export const DEPOSIT_NOTE = '$ 120,000 COP · 10% tarifa base diaria'
-export const HIGH_SEASON_WINDOWS = 'Fin de año · mitad de año · Semana Santa · receso'
-
 export const INITIAL_ACCOUNTS = [
   { value: '2840', label: 'Cuenta principal · **** 2840' },
   { value: '7712', label: 'Cuenta de ahorros · **** 7712' },

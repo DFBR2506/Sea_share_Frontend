@@ -1,10 +1,9 @@
 import { request, ApiError } from '@/lib/http'
-import { INITIAL_ACCOUNTS, INITIAL_BALANCE, INITIAL_PARAMS, OWNER_ID, PERIODS, RECORDS, REPORTS } from './mocks'
+import { INITIAL_ACCOUNTS, INITIAL_BALANCE, OWNER_ID, PERIODS, RECORDS, REPORTS } from './mocks'
 
 // Capa de acceso del módulo 3 (mocks + store en memoria). Se sustituye por `request('m3', ...)`.
 const delay = (v, ms = 200) => new Promise((r) => setTimeout(() => r(structuredClone(v)), ms))
 
-let params = { ...INITIAL_PARAMS } // solo lo usa saveParams (mock) hasta su endpoint
 let balance = INITIAL_BALANCE
 let withdrawals = []
 
@@ -37,9 +36,19 @@ export const getParams = async () => {
     throw e
   }
 }
-export const saveParams = (next) => {
-  params = { ...params, ...next, version: params.version + 1, updated: 'hoy' }
-  return delay(params)
+// UC11 · PUT /api/v1/financial-parameters. Reemplazo total; el mismo contenido no crea versión nueva.
+// Errores 400 VALIDATION_ERROR llegan como ApiError con `errors[{ field, message }]`.
+export const saveParams = async ({ commission, insurance, weekend, highSeason }) => {
+  const res = await request('m3', '/api/v1/financial-parameters', {
+    method: 'PUT',
+    body: {
+      platform_commission_percentage: commission,
+      insurance_fee_per_passenger: insurance,
+      weekend_increase_percentage: weekend,
+      high_season_increase_percentage: highSeason,
+    },
+  })
+  return { version: res.version_number }
 }
 
 export const getAccounts = () => delay({ accounts: INITIAL_ACCOUNTS, balance, withdrawals })

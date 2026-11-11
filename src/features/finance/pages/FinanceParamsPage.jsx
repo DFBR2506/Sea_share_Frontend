@@ -11,6 +11,13 @@ const formatWindow = (w) => {
   return w.split('→').map((d) => { const [m, day] = d.split('-'); return `${Number(day)} ${MONTHS[Number(m) - 1]}` }).join(' → ')
 }
 
+const FIELD_KEYS = {
+  platform_commission_percentage: 'commission',
+  insurance_fee_per_passenger: 'insurance',
+  weekend_increase_percentage: 'weekend',
+  high_season_increase_percentage: 'highSeason',
+}
+
 function ParamsForm({ current, savedVersion, onSaved }) {
   const save = useSaveParams()
   const toForm = (p) => ({ commission: String(p?.commission ?? ''), insurance: String(p?.insurance ?? ''), weekend: String(p?.weekend ?? ''), highSeason: String(p?.highSeason ?? '') })
@@ -18,14 +25,14 @@ function ParamsForm({ current, savedVersion, onSaved }) {
   const [touched, setTouched] = useState(false)
   const [edited, setEdited] = useState(false)
   const saved = savedVersion === current?.version && !edited
-  const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setEdited(true) }
+  const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setEdited(true); save.reset() }
 
   const pct = (v) => (v === '' || Number.isNaN(Number(v)) || Number(v) < 0 || Number(v) > 100) && 'Ingresa un porcentaje entre 0 y 100'
   const errors = {
     commission: pct(form.commission),
     weekend: pct(form.weekend),
     highSeason: pct(form.highSeason),
-    insurance: !(Number(form.insurance) > 0) && 'Ingresa un monto mayor a 0',
+    insurance: (form.insurance.trim() === '' || Number.isNaN(Number(form.insurance)) || Number(form.insurance) < 0) && 'Ingresa un monto mayor o igual a 0',
   }
   const invalid = Object.values(errors).some(Boolean)
 
@@ -33,12 +40,14 @@ function ParamsForm({ current, savedVersion, onSaved }) {
     setTouched(true)
     if (invalid) return
     save.mutate(
-      { commission: Number(form.commission), insurance: Number(form.insurance), weekend: Number(form.weekend), highSeason: Number(form.highSeason) },
+      { commission: form.commission.trim(), insurance: form.insurance.trim(), weekend: form.weekend.trim(), highSeason: form.highSeason.trim() },
       { onSuccess: (p) => onSaved(p.version) },
     )
   }
   const reset = () => { setForm(toForm(current)); setTouched(false); setEdited(true) }
-  const e = (k) => touched && errors[k]
+  // El servidor reporta el primer campo inválido con la clave JSON del cuerpo.
+  const serverErrors = Object.fromEntries((save.error?.errors ?? []).map((x) => [FIELD_KEYS[x.field], x.message]))
+  const e = (k) => (touched && errors[k]) || serverErrors[k]
 
   return (
     <>
@@ -58,6 +67,7 @@ function ParamsForm({ current, savedVersion, onSaved }) {
         </div>
       </section>
       <div className={local.actions}>
+        {save.isError && !save.error.errors.length && <span role="alert">{save.error.message}</span>}
         {saved && <span className={local.ok} role="status">Versión #{current.version} guardada</span>}
         <Button variant="outline" square onClick={reset}>Cancelar</Button>
         <Button variant="primary" square onClick={submit} disabled={save.isPending}>Guardar cambios</Button>
