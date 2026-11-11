@@ -1,5 +1,5 @@
 import { request, ApiError } from '@/lib/http'
-import { INITIAL_ACCOUNTS, INITIAL_BALANCE, OWNER_ID, PERIODS, REPORTS } from './mocks'
+import { INITIAL_ACCOUNTS, INITIAL_BALANCE, OWNER_ID } from './mocks'
 import { formatDateTime } from '@/lib/dates'
 
 // Capa de acceso del módulo 3 (mocks + store en memoria). Se sustituye por `request('m3', ...)`.
@@ -34,8 +34,30 @@ export const listRecords = async ({ scope, ownerId, type, page, pageSize }) => {
   }
 }
 
-export const getReport = ({ periodicity, period }) => delay({ ...REPORTS[periodicity], periodicity, period: period ?? PERIODS[periodicity][0] })
-export const listPeriods = (periodicity) => PERIODS[periodicity]
+// UC13 · GET /api/v1/financial-report. Sin `period` el backend usa el último período cerrado.
+// `comparison.percentage_variation` es null cuando el período anterior vale 0 (no calculable).
+export const getReport = async ({ scope, periodicity, period }) => {
+  const query = new URLSearchParams({ scope: scope === 'owner' ? 'OWNER' : 'PLATFORM', periodicity })
+  if (scope === 'owner') query.set('owner_id', OWNER_ID)
+  if (period) query.set('period', period)
+  const r = await request('m3', `/api/v1/financial-report?${query}`)
+  return {
+    periodicity: r.periodicity,
+    period: r.period,
+    closed: r.is_closed,
+    net: Number(r.net_amount),
+    collections: Number(r.total_collections),
+    refunds: Number(r.total_refunds),
+    settlements: Number(r.total_settlements),
+    commissions: Number(r.total_commissions),
+    counts: r.counts,
+    comparison: {
+      previousPeriod: r.comparison.previous_period,
+      absolute: Number(r.comparison.absolute_variation),
+      percentage: r.comparison.percentage_variation == null ? null : Number(r.comparison.percentage_variation),
+    },
+  }
+}
 
 // UC11 · GET /api/v1/financial-parameters. Devuelve `null` si aún no hay configuración (404 PARAMETERS_NOT_CONFIGURED).
 // Los porcentajes y el seguro se conservan como string de 4 decimales para que reenviarlos no cree una versión nueva.

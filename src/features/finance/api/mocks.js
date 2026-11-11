@@ -3,14 +3,6 @@ export const TYPE_LABEL = { CHARGE: 'Cobro', REFUND: 'Reembolso', SETTLEMENT: 'D
 // Hasta que exista autenticación, el propietario del alcance OWNER se toma de la configuración (UUID).
 export const OWNER_ID = import.meta.env.VITE_M3_OWNER_ID ?? 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'
 
-// Informe: valores base por periodicidad (millones COP)
-export const REPORTS = {
-  QUINCENAL: { cobros: 9.1, reembolsos: 0.94, dispersiones: 5.7, comisiones: 0.71, deltas: ['+6.2%', '−2.1%', '+4.8%'], counts: [21, 4, 18, 21], ownerGain: [0.52, '+4.6%'], net: [0.3, '+8.9%'], closing: 'corte al 15 sep 2026' },
-  MENSUAL: { cobros: 18.42, reembolsos: 2.16, dispersiones: 11.78, comisiones: 1.42, deltas: ['+12.4%', '−4.8%', '+9.1%'], counts: [42, 8, 37, 42], ownerGain: [1.04, '+9.1%'], net: [0.62, '+16.1%'], closing: 'corte al 30 sep 2026' },
-  TRIMESTRAL: { cobros: 52.8, reembolsos: 6.4, dispersiones: 33.9, comisiones: 4.1, deltas: ['+18.0%', '−1.2%', '+14.3%'], counts: [118, 21, 104, 118], ownerGain: [3.1, '+12.7%'], net: [1.9, '+21.4%'], closing: 'corte al 30 sep 2026' },
-}
-export const PERIODS = { QUINCENAL: ['1ª quincena sep 2026', '2ª quincena ago 2026'], MENSUAL: ['Septiembre 2026', 'Agosto 2026', 'Julio 2026'], TRIMESTRAL: ['3T 2026', '2T 2026'] }
-
 export const INITIAL_ACCOUNTS = [
   { value: '2840', label: 'Cuenta principal · **** 2840' },
   { value: '7712', label: 'Cuenta de ahorros · **** 7712' },
