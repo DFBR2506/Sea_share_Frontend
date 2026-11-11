@@ -43,7 +43,23 @@ Copia `.env.example` a `.env` para apuntar a los backends (hoy no se usan porque
 VITE_API_M1_URL=http://localhost:8081   # Embarcaciones
 VITE_API_M2_URL=http://localhost:8082   # Reservas
 VITE_API_M3_URL=http://localhost:8083   # Finanzas
+VITE_MERCADOPAGO_PUBLIC_KEY=          # Public Key de pruebas de Colombia
 ```
+
+### Payment Brick (tokenización sin cobro)
+
+1. Configura `VITE_MERCADOPAGO_PUBLIC_KEY` en `.env.local` con la **Public Key de pruebas** de una aplicación de Colombia (MCO), y reinicia Vite. Nunca uses Access Token ni secreto de webhook en `VITE_*`.
+2. Como arrendatario, selecciona embarcación, fechas y pasajeros; pulsa «Reservar», acepta la política y continúa al método de pago.
+3. Completa el Brick con [tarjetas oficiales de prueba de Colombia](https://www.mercadopago.com.co/developers/es/docs/checkout-bricks/integration-test/test-cards) y los datos de prueba indicados por MercadoPago. No uses una tarjeta real.
+4. Pulsa «Obtener datos de pago de prueba». El callback debe mostrar `tokenPresent: true`, `emailPresent: true`, el método y `installments: 1`. La evidencia no muestra el token, correo ni documento.
+5. Comprueba en Network que hay peticiones del SDK a MercadoPago para tokenizar, pero **ningún POST de creación de pagos o preferencias ni llamadas a M2/M3**. El backend puede permanecer apagado.
+6. Vuelve al resumen y recarga: se conservan consentimiento y vencimiento, pero no el token. Al vencer se desmonta el Brick. «Volver a cargar formulario» limpia sus datos sin renovar el TTL.
+
+Se usa el SDK oficial `https://sdk.mercadopago.com/js/v2`, sin wrapper React, preferencias ni billetera/PSE/efectivo. Solo tarjetas y una cuota. El importe sigue siendo el del mock; no se presenta como una cotización real en COP. Un importe inferior al mínimo habilitado por MercadoPago puede impedir mostrar cuotas: la prueba debe usar una selección compatible, sin alterar silenciosamente el total.
+
+La captura queda únicamente en memoria del componente y se borra al salir, reintentar o expirar. No se crean pagos: `tokenized` **no** significa `APPROVED`. La captura de contacto y el contrato normalizado pertenecen a la fase 4; el adaptador de envío desacoplado, a la fase 5.
+
+Pruebas locales sin SDK real: `node --test tests/*.test.js`. Estas pruebas no acreditan tokenización real; la comprobación manual anterior necesita la Public Key y conexión a MercadoPago.
 
 ## Cómo probarlo
 
@@ -62,6 +78,7 @@ Los datos mock viven en memoria: las acciones (cancelar, eliminar, retirar…) s
 | **Arrendatario** | `/explorar` | Explorar embarcaciones con filtros |
 | | `/explorar/:boatId` | Detalle, calendario de rango, reserva |
 | | `/explorar/:boatId/pago` | Pago con temporizador de 15 min |
+| | `/explorar/:boatId/pago/metodo` | Payment Brick de prueba, sin cobro |
 | | `/mis-reservas`, `/mis-reservas/:id` | Historial y detalle, cancelación |
 | **Propietario** | `/owner/embarcaciones` | Lista de embarcaciones |
 | | `/owner/embarcaciones/nueva` | Registro en 2 pasos |

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui'
 import { formatRange, money, nightsBetween } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
+import PaymentBrick from '../components/PaymentBrick'
 import styles from './pages.module.css'
 
 export default function PaymentMethodPage() {
@@ -28,8 +29,8 @@ export default function PaymentMethodPage() {
         <section className={styles.panel} aria-labelledby="payment-details-title">
           <h2 id="payment-details-title">Datos de contacto y pago</h2>
           {!expired && <>
-            <p className={styles.muted}>Aquí completarás tus datos de contacto y elegirás el método de pago con MercadoPago.</p>
-            <p className={styles.payNote} role="status">El formulario Payment Brick estará disponible en una próxima fase. No se han solicitado datos de tarjeta ni realizado ningún cobro.</p>
+            <p className={styles.muted}>Introduce los datos del pagador y elige una tarjeta de prueba. Los datos de contacto de la reserva se incorporarán en la siguiente fase.</p>
+            <PaymentBrick />
           </>}
           {expired && <Button onClick={() => navigate(`/explorar/${boatId}`)}>Volver a la embarcación</Button>}
         </section>
