@@ -4,6 +4,7 @@ import * as api from './api'
 export const useRecords = (args) => useQuery({ queryKey: ['m3', 'records', args], queryFn: () => api.listRecords(args), placeholderData: keepPreviousData })
 export const useReport = (args) => useQuery({ queryKey: ['m3', 'report', args], queryFn: () => api.getReport(args), placeholderData: keepPreviousData })
 export const useParams3 = () => useQuery({ queryKey: ['m3', 'params'], queryFn: api.getParams })
+export const useExportReport = () => useMutation({ mutationFn: api.exportReport })
 export const useAccounts = () => useQuery({ queryKey: ['m3', 'accounts'], queryFn: api.getAccounts })
 
 function useM3Mutation(fn) {

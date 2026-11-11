@@ -4,26 +4,14 @@ import downloadIcon from '@/assets/icons/download.svg'
 import { Dropdown, SlideButton, SlidingTabs } from '@/components/ui'
 import { copMoney } from '@/lib/dates'
 import { ApiError } from '@/lib/http'
+import { saveBlob } from '@/lib/download'
 import { PERIODICITY, listPeriods } from '../periods'
 import { TYPE_LABEL } from '../api/mocks'
-import { useReport } from '../hooks'
+import { useExportReport, useReport } from '../hooks'
 import styles from '../components/FinanceUI.module.css'
 
 const TYPES = ['CHARGE', 'REFUND', 'SETTLEMENT', 'COMMISSION']
 const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${copMoney(Math.abs(n))}`
-
-function downloadCsv(report, scope) {
-  const rows = [
-    ['Concepto', 'Valor (COP)'],
-    ['Cobros confirmados', report.collections], ['Reembolsos confirmados', report.refunds],
-    ['Dispersiones confirmadas', report.settlements], ['Comisiones confirmadas', report.commissions],
-    [scope === 'owner' ? 'Ganancias del propietario' : 'Neto generado', report.net],
-  ]
-  const url = URL.createObjectURL(new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }))
-  const a = Object.assign(document.createElement('a'), { href: url, download: `informe-${report.periodicity.toLowerCase()}.csv` })
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 /** Informe financiero (feature 013). scope: 'owner' | 'admin'. */
 export default function FinanceReportPage({ scope }) {
@@ -31,6 +19,12 @@ export default function FinanceReportPage({ scope }) {
   const [period, setPeriod] = useState('')
   const periods = listPeriods(periodicity)
   const { data: r, isPending, isError, error } = useReport({ scope, periodicity, period })
+  const exporter = useExportReport()
+  // El export exige un período explícito: se usa el que el informe ya resolvió (incluso si se pidió el último cerrado).
+  const exportCsv = () => exporter.mutate(
+    { scope, periodicity: r.periodicity, period: r.period },
+    { onSuccess: ({ blob, filename }) => saveBlob(blob, filename ?? `informe_financiero_${r.period}.csv`) },
+  )
 
   const changePeriodicity = (v) => { setPeriodicity(v); setPeriod('') }
   const bigLabel = scope === 'owner' ? 'Ganancias del propietario' : 'Neto generado'
@@ -55,9 +49,10 @@ export default function FinanceReportPage({ scope }) {
             <Dropdown label="Período" options={periods} value={period} onChange={(e) => setPeriod(e.target.value)} />
           </div>
         </div>
-        <SlideButton icon={downloadIcon} disabled={!r} onClick={() => downloadCsv(r, scope)}>Exportar CSV</SlideButton>
+        <SlideButton icon={downloadIcon} disabled={!r || exporter.isPending} onClick={exportCsv}>Exportar CSV</SlideButton>
       </div>
 
+      {exporter.isError && <p className={styles.empty} role="alert">No se pudo exportar el informe: {exporter.error.message}</p>}
       {isPending && <p className={styles.empty}>Cargando…</p>}
       {isError && <p className={styles.empty} role="alert">{error instanceof ApiError && error.code === 'INVALID_PERIOD' ? 'El período seleccionado no es válido.' : error.message}</p>}
       {r && (

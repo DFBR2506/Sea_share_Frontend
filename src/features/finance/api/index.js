@@ -1,4 +1,4 @@
-import { request, ApiError } from '@/lib/http'
+import { request, requestFile, ApiError } from '@/lib/http'
 import { INITIAL_ACCOUNTS, INITIAL_BALANCE, OWNER_ID } from './mocks'
 import { formatDateTime } from '@/lib/dates'
 
@@ -57,6 +57,13 @@ export const getReport = async ({ scope, periodicity, period }) => {
       percentage: r.comparison.percentage_variation == null ? null : Number(r.comparison.percentage_variation),
     },
   }
+}
+
+// UC13 · GET /api/v1/financial-report/export. A diferencia de la consulta, `period` es obligatorio.
+export const exportReport = ({ scope, periodicity, period }) => {
+  const query = new URLSearchParams({ scope: scope === 'owner' ? 'OWNER' : 'PLATFORM', periodicity, period })
+  if (scope === 'owner') query.set('owner_id', OWNER_ID)
+  return requestFile('m3', `/api/v1/financial-report/export?${query}`, { accept: 'text/csv' })
 }
 
 // UC11 · GET /api/v1/financial-parameters. Devuelve `null` si aún no hay configuración (404 PARAMETERS_NOT_CONFIGURED).

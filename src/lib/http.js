@@ -28,3 +28,11 @@ export async function request(module, path, { method = 'GET', body, signal } = {
   if (!res.ok) throw new ApiError(res.status, data)
   return data
 }
+
+// Descarga de archivos (p. ej. CSV). Los errores siguen llegando como Problem Details en JSON.
+export async function requestFile(module, path, { accept, signal } = {}) {
+  const res = await fetch(`${BASE_URLS[module]}${path}`, { signal, headers: { Accept: accept } })
+  if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null))
+  const filename = res.headers.get('Content-Disposition')?.match(/filename="?([^";]+)"?/)?.[1]
+  return { blob: await res.blob(), filename }
+}
