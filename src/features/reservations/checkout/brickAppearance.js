@@ -43,7 +43,7 @@ export function brickVariables() {
       fontSizeMedium: fontSize('--text-body'),
       inputHorizontalPadding: size('--space-4'),
       inputVerticalPadding: size('--space-3'),
-      formPadding: size('--space-1'),
+      formPadding: size('--space-3'),
     }
   } finally {
     probe.remove()

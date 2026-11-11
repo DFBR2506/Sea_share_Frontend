@@ -57,7 +57,7 @@ VITE_MERCADOPAGO_PUBLIC_KEY=          # Public Key de pruebas de Colombia
 
 Se usa el SDK oficial `https://sdk.mercadopago.com/js/v2`, sin wrapper React, preferencias ni billetera/PSE/efectivo. Solo tarjetas y una cuota. El importe sigue siendo el del mock; no se presenta como una cotización real en COP. Un importe inferior al mínimo habilitado por MercadoPago puede impedir mostrar cuotas: la prueba debe usar una selección compatible, sin alterar silenciosamente el total.
 
-La captura queda únicamente en memoria del componente y se borra al salir, reintentar, editar el contacto o expirar. El contacto tampoco se persiste al volver o recargar. No se crean pagos: `tokenized` **no** significa `APPROVED`. El adaptador de envío desacoplado pertenece a la fase 5.
+La captura queda únicamente en memoria del flujo local y se borra al salir, volver a cargar el formulario, editar el contacto o expirar. El contacto tampoco se persiste al volver o recargar. No se crean pagos: `tokenized` **no** significa `APPROVED`.
 
 #### Contrato local de pago (fase 4)
 
@@ -77,6 +77,24 @@ La comprobación sanitizada incluye presencia de contacto y de los campos mínim
 `checkout/brickAppearance.js` deriva colores, variantes de marca, radios, tamaños de texto y espaciados de `src/styles/tokens.css`. Convierte colores calculados (`color-mix`) a valores sRGB antes de entregarlos al SDK. Los campos de contacto usan `Input`/`Button` y las columnas/paneles existentes; no se añaden colores globales ni selectores del DOM interno del SDK.
 
 La interfaz anfitriona conserva Inter. Los campos PCI aislados mantienen las limitaciones tipográficas del SDK: no se presupone que hereden la fuente del documento ni se inyectan reglas dentro de sus iframes. Revisar visualmente el Brick real en móvil y escritorio, incluidos errores y foco, sigue siendo necesario.
+
+El formulario del Brick utiliza `--space-3` (12 px) de padding interior para separar ligeramente los campos de sus laterales, mediante la opción pública `formPadding` del SDK.
+
+#### Flujo desacoplado (fase 5)
+
+`checkout/paymentFlow.js` controla `loading_sdk`, `ready`, `tokenizing`, `tokenized`, `error` y `expired`. Una Public Key ausente muestra `configuration_error` sin cargar el SDK. `tokenizing` corresponde a validar/capturar el resultado de `onSubmit`; la tokenización de tarjeta previa al callback la gestiona el propio Brick.
+
+El flujo entrega el contrato normalizado a `checkout/detachedPaymentAdapter.js`, que solo devuelve:
+
+```js
+{ mode: 'detached', outcome: 'tokenized', paymentCreated: false }
+```
+
+No hay llamadas HTTP, temporizadores de éxito ficticio ni estados financieros simulados. El resultado sanitizado muestra `mode`/`outcome`, nunca el contrato sensible. El doble callback comparte una sola promesa; tras capturar se oculta el formulario y otra prueba requiere volver a cargarlo. Un fallo permite reintentar mientras el plazo siga vigente; la recarga nunca renueva el TTL.
+
+Se valida el vencimiento antes de normalizar, antes del adaptador y después de resolverlo. Si el plazo vence durante la operación, se descarta su resultado, se borra la captura y se cancela la señal. Salir, editar contacto o recargar también cancela e ignora respuestas tardías; no se escribe el contrato en storage ni en React Query.
+
+**Conexión futura (fuera de esta entrega):** reemplazar el adaptador local por un transporte HTTP solo cuando exista el endpoint acordado con Reservas/intermediario. Conservar el contrato normalizado y la cancelación mediante `AbortSignal`; adaptar explícitamente la respuesta y los estados de confirmación financiera. El flujo actual rechaza respuestas `APPROVED` o `paymentCreated: true` para no confundirlas con tokenización. No basta con cambiar una URL: siguen pendientes el contrato de entrada, el UUID real de reserva y el soporte de emisor/identificación en M3. Un timeout futuro deberá tratarse como resultado desconocido, no como permiso para duplicar un cobro.
 
 Pruebas locales sin SDK real: `node --test tests/*.test.js`. Estas pruebas no acreditan tokenización real; la comprobación manual anterior necesita la Public Key y conexión a MercadoPago.
 
