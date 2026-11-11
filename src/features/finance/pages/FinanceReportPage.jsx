@@ -71,7 +71,7 @@ export default function FinanceReportPage({ scope }) {
             <section className={`${styles.panel} ${styles.byType}`}>
               <h3>Registros por tipo</h3>
               <dl>
-                {['COBRO', 'REEMBOLSO', 'DISPERSION', 'COMISION'].map((t, i) => (
+                {['CHARGE', 'REFUND', 'SETTLEMENT', 'COMMISSION'].map((t, i) => (
                   <div key={t} style={{ display: 'contents' }}><dt>{TYPE_LABEL[t]}</dt><dd>{r.counts[i]}</dd></div>
                 ))}
               </dl>

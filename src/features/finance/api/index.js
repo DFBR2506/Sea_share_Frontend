@@ -1,5 +1,6 @@
 import { request, ApiError } from '@/lib/http'
-import { INITIAL_ACCOUNTS, INITIAL_BALANCE, OWNER_ID, PERIODS, RECORDS, REPORTS } from './mocks'
+import { INITIAL_ACCOUNTS, INITIAL_BALANCE, OWNER_ID, PERIODS, REPORTS } from './mocks'
+import { formatDateTime } from '@/lib/dates'
 
 // Capa de acceso del módulo 3 (mocks + store en memoria). Se sustituye por `request('m3', ...)`.
 const delay = (v, ms = 200) => new Promise((r) => setTimeout(() => r(structuredClone(v)), ms))
@@ -7,11 +8,30 @@ const delay = (v, ms = 200) => new Promise((r) => setTimeout(() => r(structuredC
 let balance = INITIAL_BALANCE
 let withdrawals = []
 
-/** scope 'owner' fuerza el propietario actual; 'admin' acepta un filtro opcional. */
-export const listRecords = ({ scope, ownerId, type, page, pageSize }) => {
-  const rows = RECORDS.filter((r) => (scope === 'owner' ? r.ownerId === OWNER_ID : !ownerId || r.ownerId === ownerId)).filter((r) => !type || r.type === type)
-  const start = (page - 1) * pageSize
-  return delay({ items: rows.slice(start, start + pageSize), total: rows.length, page, pageSize })
+// UC12 · GET /api/v1/financial-records. scope 'owner' → OWNER (owner_id obligatorio); 'admin' → PLATFORM (owner_id opcional).
+// `type` usa los valores del contrato: CHARGE | REFUND | SETTLEMENT | COMMISSION.
+export const listRecords = async ({ scope, ownerId, type, page, pageSize }) => {
+  const query = new URLSearchParams({ scope: scope === 'owner' ? 'OWNER' : 'PLATFORM', page, size: pageSize })
+  const owner = scope === 'owner' ? OWNER_ID : ownerId?.trim()
+  if (owner) query.set('owner_id', owner)
+  if (type) query.set('transaction_type', type)
+  const res = await request('m3', `/api/v1/financial-records?${query}`)
+  return {
+    items: res.content.map((r, i) => ({
+      id: `${r.reservation_id}-${r.record_type}-${r.created_at}-${i}`,
+      type: r.record_type,
+      reservation: r.reservation_id,
+      ownerId: r.owner_id,
+      boat: r.boat_id,
+      amount: Number(r.amount),
+      createdAt: formatDateTime(r.created_at),
+      externalRef: r.external_reference ?? '—',
+    })),
+    total: res.total_elements,
+    totalPages: res.total_pages,
+    page: res.page_number,
+    pageSize: res.page_size,
+  }
 }
 
 export const getReport = ({ periodicity, period }) => delay({ ...REPORTS[periodicity], periodicity, period: period ?? PERIODS[periodicity][0] })
