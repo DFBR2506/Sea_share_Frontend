@@ -14,7 +14,7 @@
 #### Objectives & Context *(mandatory)*
 
 ##### Test Objectives
-Este caso de prueba verifica que, cuando todavía no existe una configuración financiera global, la pantalla `/finadmin/parametros` informa que la configuración está **pendiente**, **no inventa valores** para ningún parámetro y permite al Administrador Financiero crear la primera versión.
+Este caso de prueba verifica que, cuando el backend no tiene ninguna configuración financiera global (`404 PARAMETERS_NOT_CONFIGURED`), la pantalla `/finadmin/parametros` informa que la configuración está **pendiente**, **no inventa valores** para ningún parámetro y permite al Administrador Financiero crear la primera versión.
 
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
@@ -30,17 +30,17 @@ Este caso de prueba verifica que, cuando todavía no existe una configuración f
 #### Prerequisites & Environment
 
 ##### Test Case Limitations
-* **Este escenario no se puede reproducir con los mocks actuales**: `getParams` siempre devuelve la versión inicial (#12). Solo es ejecutable con backend real y una BD sin filas en `financial_parameters`, o simulando la respuesta vacía en las herramientas de desarrollo del navegador.
-* **Comportamiento actual del front no definido**: `FinanceParamsPage` no tiene estado vacío ni de error; con una respuesta vacía probablemente falla al leer `params.version`. Registrar lo observado y abrir defecto si no cumple lo esperado.
-* El mensaje exacto de "configuración pendiente" no está definido en el spec; los resultados esperados describen el comportamiento y no un texto literal.
+* Requiere una BD **sin** versiones de parámetros: levantar el backend **sin** el perfil `qa` (`SPRING_PROFILES_ACTIVE=dev`) para que no se aplique el seed. Al terminar, restaurar `dev,qa`.
+* **Comportamiento actual del front no definido**: `FinanceParamsPage` no tiene estado vacío ni de error; con un `404` probablemente falla al leer `params.version`. Registrar lo observado y abrir defecto si no cumple lo esperado.
+* El texto exacto de "configuración pendiente" no está definido en el spec; los resultados esperados describen el comportamiento y no un texto literal.
 
 ##### Dependencies & Assumptions
-* Backend M3 corriendo y accesible (`VITE_API_M3_URL`), con la BD sin ninguna versión de parámetros.
-* Alternativa: interceptar la petición de parámetros (DevTools → Network → bloquear/sobrescribir respuesta) para devolver "no configurado".
+* El frontend está conectado al backend de pruebas (`VITE_API_M3_URL`).
+* Capacidad de recrear la BD: `docker compose --profile app down -v`. `financial_parameters` es *append-only* y no admite `TRUNCATE`.
 
 ##### Preconditions & Default Setup
-* **Initial State** : sesión como Admin Financiero; tabla `financial_parameters` vacía.
-* **Environment** : desarrollo local con backend real, Chrome/Firefox actual, ventana ≥ 1024 px.
+* **Initial State** : `financial_parameters` vacía (`SELECT count(*) = 0`).
+* **Environment** : backend en `http://localhost:8080` levantado sin el perfil `qa`, frontend en `http://localhost:5173`, Chrome/Firefox actual, ventana ≥ 1024 px. BD: `docker exec -it seashare-postgres psql -U seashare -d seashare`.
 * **Test Accounts** : en `/login`, botón "Entrar como Admin Financiero".
 
 --------------------------------------------------------------------------------
@@ -50,26 +50,32 @@ Este caso de prueba verifica que, cuando todavía no existe una configuración f
 ##### Section 1: Carga sin configuración previa
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Entrar como Admin Financiero | Abrir `/login` y pulsar "Entrar como Admin Financiero" | `http://localhost:5173/login` | Redirige a `/finadmin/parametros`. | [ ] | |
-| 2 | Verificar que la pantalla no se rompe | Observar la pantalla tras la carga | N/A | La pantalla no queda en blanco ni congelada en "Cargando…" y no hay errores sin controlar en la consola del navegador. | [ ] | |
-| 3 | Verificar el aviso de configuración pendiente | Leer el contenido de la pantalla | N/A | Se informa claramente que la configuración financiera está pendiente. | [ ] | |
-| 4 | Verificar que no se inventan valores | Leer los cuatro campos configurables | N/A | Ningún campo muestra un valor por defecto inventado (ni `0`, ni los valores del seed); aparecen vacíos. | [ ] | |
-| 5 | Verificar los datos calculados | Leer "Depósito de garantía" y "Ventanas de temporada alta" | N/A | No muestran valores derivados de una configuración inexistente (vacíos o con aviso de pendiente). | [ ] | |
-| 6 | Verificar que no hay versión guardada | Buscar el mensaje "Versión #N guardada" | N/A | No aparece ningún número de versión vigente. | [ ] | |
+| 1 | Confirmar que no hay configuración | `psql`: `SELECT count(*) FROM financial_parameters;` | N/A | `count = 0`. | [ ] | |
+| 2 | Entrar como Admin Financiero | Abrir `/login` y pulsar "Entrar como Admin Financiero" | `http://localhost:5173/login` | Redirige a `/finadmin/parametros`. | [ ] | |
+| 3 | Verificar la respuesta del backend | DevTools → Network | N/A | `GET /api/v1/financial-parameters` responde `404` con `code = PARAMETERS_NOT_CONFIGURED` y `retryable = true`. | [ ] | |
+| 4 | Verificar que la pantalla no se rompe | Observar la pantalla | N/A | No queda en blanco ni congelada en "Cargando…"; sin errores sin controlar en la consola. | [ ] | |
+| 5 | Verificar el aviso de configuración pendiente | Leer el contenido | N/A | Se informa claramente que la configuración financiera está pendiente. | [ ] | |
+| 6 | Verificar que no se inventan valores | Leer los cuatro campos configurables | N/A | Ningún campo muestra un valor por defecto inventado (ni `0` ni los valores del seed); aparecen vacíos. | [ ] | |
+| 7 | Verificar los datos calculados | Leer "Depósito de garantía" y "Ventanas de temporada alta" | N/A | No muestran valores derivados de una configuración inexistente (vacíos o con aviso de pendiente). | [ ] | |
+| 8 | Verificar que no hay versión guardada | Buscar "Versión #N guardada" | N/A | No aparece ningún número de versión. | [ ] | |
+| 9 | Verificar que la lectura no crea estado | `psql`: `SELECT count(*) FROM financial_parameters;` | N/A | Sigue en `0`. | [ ] | |
 
 ##### Section 2: Errores y casos extremos de este escenario
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Guardar con los campos vacíos | Pulsar "Guardar cambios" sin llenar nada | N/A | Se muestran los errores de validación de los cuatro campos; no se crea ninguna versión. | [ ] | |
-| 2 | Crear la primera versión | Llenar los cuatro campos con valores válidos y guardar | comisión `12`, seguro `18000`, fin de semana `8`, temporada alta `15` | Aparece "Versión #1 guardada" y desaparece el aviso de configuración pendiente. | [ ] | Valores ilustrativos. |
-| 3 | Recargar tras crear la primera versión | Pulsar F5 | N/A | La pantalla carga con los valores guardados y sin aviso de pendiente. | [ ] | |
-| 4 | Cancelar sin configuración | Escribir valores y pulsar "Cancelar" | N/A | Los campos vuelven a quedar vacíos; no se crea ninguna versión. | [ ] | |
-| 5 | Error del servidor distinto a "sin configuración" | Simular una respuesta `500` | N/A | Se informa un error controlado, distinto del aviso de configuración pendiente. | [ ] | No debe confundirse "pendiente" con "falló". |
+| 1 | Guardar con los campos vacíos | Pulsar "Guardar cambios" sin llenar nada | N/A | Se muestran los errores de validación de los cuatro campos; no se envía `PUT`; la tabla sigue vacía. | [ ] | |
+| 2 | Crear la primera versión | Llenar los cuatro campos con valores válidos y guardar | comisión `15`, seguro `15000`, fin de semana `10`, temporada alta `25` | El backend responde `200` con `version_number = 1`; aparece "Versión #1 guardada" y desaparece el aviso de pendiente. | [ ] | Valores ilustrativos. |
+| 3 | Verificar la primera versión en BD | `psql`: `SELECT * FROM financial_parameters;` | N/A | Una sola fila (`v1`) con los cuatro valores guardados. | [ ] | |
+| 4 | Recargar tras crear la primera versión | Pulsar F5 | N/A | Carga con los valores guardados y sin aviso de pendiente. | [ ] | |
+| 5 | Cancelar sin configuración | Escribir valores y pulsar "Cancelar" | N/A | Los campos vuelven a quedar vacíos; no se crea ninguna versión. | [ ] | Hacerlo con la tabla aún vacía (antes del paso 2). |
+| 6 | Error del servidor distinto a "sin configuración" | Detener PostgreSQL y recargar la pantalla; restaurar | N/A | El backend responde `500 INTERNAL_ERROR` y la pantalla informa un error, distinto del aviso de pendiente. | [ ] | No debe confundirse "pendiente" con "falló". |
+| 7 | Guardado inválido antes de configurar | Intentar guardar una comisión inválida con la tabla vacía | comisión `150` | Error de validación; la tabla sigue vacía y la pantalla sigue en estado pendiente. | [ ] | |
+| 8 | Configuración creada por otra sesión | Con la pantalla en estado pendiente, otra sesión guarda una versión; recargar | N/A | Tras recargar, la pantalla muestra la versión guardada por la otra sesión. | [ ] | `retryable = true`. |
 
 ##### Edge Cases & Boundary Conditions
-* **EC-001** : "Sin configuración" y "error de carga" son estados distintos y deben comunicarse de forma diferente.
-* **EC-002** : Mientras no exista configuración, UC02, UC04 y UC10 (consumidores) no pueden calcular; esa respuesta se verifica en los TC del backend, no aquí.
-* **EC-003** : Tras crear la primera versión, la numeración parte de la versión inicial que defina el backend (se asume `1`).
+* **EC-001** : "Sin configuración" (`404 PARAMETERS_NOT_CONFIGURED`) y "error de carga" (`5xx`) son estados distintos y deben comunicarse de forma diferente.
+* **EC-002** : No confundir con el `503 FINANCIAL_PARAMETERS_NOT_CONFIGURED` que consumen UC01/UC04; este TC solo cubre el `404` de UC11.
+* **EC-003** : La primera versión guardada recibe el número `1`.
 
 --------------------------------------------------------------------------------
 

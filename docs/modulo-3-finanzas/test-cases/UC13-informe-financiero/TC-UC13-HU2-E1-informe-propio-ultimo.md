@@ -29,17 +29,19 @@ Este caso de prueba verifica que el Propietario, desde "Balance General" (`/owne
 #### Prerequisites & Environment
 
 ##### Test Case Limitations
-* **Los mocks no restringen el informe al propietario**: `getReport` ignora el alcance y devuelve los mismos valores de la plataforma (Mensual: cobros 18.42 M, reembolsos 2.16 M, dispersiones 11.78 M, comisiones 1.42 M, ganancia 1.04 M). El aislamiento de datos propios (pasos marcados) solo se verifica con **backend real**.
-* **Inconsistencia de los mocks**: la ganancia del mock (1.04 M) no coincide con el total de dispersiones (11.78 M), y según el spec (RF-008) la ganancia del propietario **es** el total de sus dispersiones confirmadas. Con backend real ambos valores deben coincidir.
-* Los valores son **ilustrativos**; ajustar a los del entorno. Los mocks solo ofrecen períodos cerrados.
+* Se ejecuta contra el **backend M3 del entorno de pruebas**. El dataset (propietarios A y B en 2026-09 y 2026-10) **no forma parte del seed**: se prepara con el dataset de este TC.
+* Los montos son **ilustrativos**; ajustar al dataset. La pantalla muestra montos en millones de COP (`$ 0.30 M`); el valor exacto se contrasta contra el JSON.
+* Último mes cerrado = `2026-10` mientras la ejecución ocurra en noviembre de 2026.
+* La sesión del Propietario debe usar el `owner_id` del Propietario A; verificar cómo la pantalla obtiene ese identificador (sin autenticación real).
 
 ##### Dependencies & Assumptions
-* Ninguna dependencia de otros TC.
-* La aplicación corre en `http://localhost:5173` con el estado inicial de los mocks.
+* El frontend está conectado al backend de pruebas (`VITE_API_M3_URL`) y la sesión del Propietario usa el `owner_id` de A.
+* **TC-UC13-HU1-E1 debe haber pasado** (agregado de plataforma y dataset mensual verificados).
+* El dataset contiene al menos dos propietarios con registros en 2026-09 y 2026-10.
 
 ##### Preconditions & Default Setup
-* **Initial State** : sesión como Propietario (`owner-0284`); en el sistema hay registros de otros propietarios.
-* **Environment** : desarrollo local, Chrome/Firefox actual, ventana ≥ 1024 px.
+* **Initial State** : Propietario A (`11111111-1111-4111-8111-111111111111`) en 2026-10: 2 cobros `300000.00`, 1 reembolso `20000.00`, 2 dispersiones `250000.00`, 2 comisiones `37500.00`; en 2026-09 sus dispersiones suman `200000.00`. Propietario B (`22222222-2222-4222-8222-222222222222`) en 2026-10: 5 cobros `500000.00`, 1 reembolso `80000.00`, 4 dispersiones `400000.00`, 4 comisiones `60000.00`.
+* **Environment** : backend en `http://localhost:8080`, frontend en `http://localhost:5173`, Chrome/Firefox actual, ventana ≥ 1024 px. BD: `docker exec -it seashare-postgres psql -U seashare -d seashare`.
 * **Test Accounts** : en `/login`, botón "Entrar como Propietario".
 
 --------------------------------------------------------------------------------
@@ -49,30 +51,35 @@ Este caso de prueba verifica que el Propietario, desde "Balance General" (`/owne
 ##### Section 1: Informe propio del último período cerrado
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Entrar como Propietario | Abrir `/login` y pulsar "Entrar como Propietario" | `http://localhost:5173/login` | Redirige a `/owner/embarcaciones`. | [ ] | |
-| 2 | Abrir el balance | Pulsar "Finanzas" en el menú | N/A | Redirige a `/owner/finanzas/balance`; la pestaña "Balance General" está activa y también se ve "Historial de Pagos". | [ ] | |
-| 3 | Verificar el encabezado | Leer el encabezado | N/A | "Feature 013", título "Informe financiero". | [ ] | |
-| 4 | Verificar los controles por defecto | Leer "Periodicidad" y "Período" | N/A | "Mensual" seleccionado y período "Septiembre 2026". | [ ] | RF-003. |
-| 5 | Verificar los KPI | Leer los cuatro indicadores | N/A | Cobros `$ 18.42 M`, reembolsos `$ 2.16 M`, dispersiones `$ 11.78 M` y comisiones `$ 1.42 M`, con variaciones "vs. período anterior" (y "Métrica informativa" para comisiones). | [ ] | Con backend real, valores solo de sus reservas. |
-| 6 | Verificar la ganancia del propietario | Leer el panel grande | N/A | "Ganancias del propietario", "Total de dispersiones confirmadas a favor" y "+ $ 1.04 M · +9.1% frente al período anterior". | [ ] | No debe decir "Neto generado". |
-| 7 | Verificar los registros por tipo | Leer "Registros por tipo" | N/A | Cobro 42, Reembolso 8, Dispersión 37, Comisión 42. | [ ] | |
-| 8 | Verificar la nota al pie | Leer el pie | N/A | "Período cerrado · alcance propietario · garantías pendientes excluidas". | [ ] | |
-| 9 | Verificar la coherencia de la ganancia | Comparar "Ganancias del propietario" con "Dispersiones confirmadas" | N/A | Ambos valores son iguales. | [ ] | RF-008. **Con mocks falla** (1.04 vs 11.78); con backend real debe pasar. |
-| 10 | Verificar el aislamiento de datos | Comparar con el informe de la plataforma (TC-UC13-HU1-E1) | N/A | Las cifras del propietario son menores o iguales a las de la plataforma y no incluyen datos de otros. | [ ] | Solo backend real. |
+| 1 | Verificar los registros de A y B | `psql`: `SELECT owner_id, record_type, COUNT(*), SUM(amount) FROM v_financial_records WHERE created_at >= '2026-10-01T00:00:00-05:00' AND created_at < '2026-11-01T00:00:00-05:00' GROUP BY owner_id, record_type;` | A y B, `2026-10` | A y B tienen los totales de la precondición; B sirve de contraste para detectar fuga de datos. | [ ] | |
+| 2 | Entrar como Propietario | Abrir `/login` y pulsar "Entrar como Propietario" | `http://localhost:5173/login` | Redirige a `/owner/embarcaciones`. | [ ] | |
+| 3 | Abrir el balance | Pulsar "Finanzas" en el menú | N/A | Redirige a `/owner/finanzas/balance`; la pestaña "Balance General" está activa y también se ve "Historial de Pagos". | [ ] | |
+| 4 | Verificar la petición | DevTools → Network | N/A | `GET /api/v1/financial-report?scope=OWNER&owner_id=11111111-…&periodicity=MONTHLY` responde `200`; anotar el JSON. | [ ] | |
+| 5 | Verificar el encabezado | Leer el encabezado | N/A | "Feature 013", título "Informe financiero". | [ ] | |
+| 6 | Verificar los controles por defecto | Leer "Periodicidad" y "Período" | N/A | "Mensual" y el último período cerrado (octubre de 2026); coincide con `period = "2026-10"`, `is_closed = true`, `scope = "OWNER"`. | [ ] | RF-003. |
+| 7 | Verificar los KPI | Leer los cuatro indicadores | N/A | Cobros `$ 0.30 M`, reembolsos `$ 0.02 M`, dispersiones `$ 0.25 M` y comisiones aprox. `$ 0.04 M`; solo datos de A. | [ ] | RF-006. Redondeo a millones (H-12). |
+| 8 | Verificar la ganancia del propietario | Leer el panel grande | N/A | "Ganancias del propietario", "Total de dispersiones confirmadas a favor" y valor `$ 0.25 M` (`net_amount = "250000.00"`). | [ ] | No debe decir "Neto generado". RF-008. |
+| 9 | Verificar la coherencia de la ganancia | Comparar "Ganancias del propietario" con "Dispersiones confirmadas" | N/A | Ambos valores son iguales. | [ ] | No se aplica la fórmula de plataforma. |
+| 10 | Verificar la comparación propia | Leer la variación | A, anterior `2026-09`, dispersiones `200000.00` | Variación absoluta `50000.00` y porcentual `25.00 %` frente a septiembre de 2026. | [ ] | RF-010. |
+| 11 | Verificar los registros por tipo | Leer "Registros por tipo" | N/A | Cobro 2, Reembolso 1, Dispersión 2, Comisión 2. | [ ] | Sin conteos de B. |
+| 12 | Verificar la nota al pie | Leer el pie | N/A | Indica período cerrado, alcance propietario y garantías pendientes excluidas. | [ ] | |
+| 13 | Verificar el aislamiento de datos | Comparar con el informe de plataforma (TC-UC13-HU1-E1) | plataforma: cobros `1150000.00`, neto `150000.00` | Los valores de A no coinciden con los de la plataforma ni incluyen los `400000.00` de dispersiones de B. | [ ] | RF-006. |
+| 14 | Verificar que no se consulta Flota | Revisar el journal de Flota o los logs del backend | N/A | No hay llamada al Sistema de Gestión de Flota; no hay `401`/`403`. | [ ] | RF-015. |
 
 ##### Section 2: Otras periodicidades, errores y casos extremos
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Cambiar a Quincenal | Pulsar "Quincenal" | `Quincenal` | Período "1ª quincena sep 2026"; ganancia `$ 0.52 M` con "+4.6%". | [ ] | |
-| 2 | Cambiar a Trimestral | Pulsar "Trimestral" | `Trimestral` | Período "3T 2026"; ganancia `$ 3.10 M` con "+12.7%". | [ ] | |
-| 3 | Volver a Mensual | Pulsar "Mensual" | `Mensual` | Vuelve "Septiembre 2026". | [ ] | |
-| 4 | Propietario sin operaciones (solo backend real) | Entrar con un propietario sin registros en el período | N/A | Todo en `$ 0.00 M` y conteos en 0, sin error. | [ ] | |
-| 5 | Período en curso (solo backend real) | Consultar el período actual | N/A | Se identifica como abierto/parcial. | [ ] | |
-| 6 | Cambiar a "Historial de Pagos" y volver | Alternar entre las dos pestañas de Finanzas | N/A | El informe vuelve a cargar sin errores. | [ ] | |
-| 7 | Error de carga (solo backend real) | Simular `500` y abrir el balance | N/A | Mensaje de error controlado, sin pantalla en blanco. | [ ] | **Posible defecto**: no se maneja el estado de error. |
+| 1 | Cambiar a Quincenal | Pulsar "Quincenal" | `Quincenal` | `periodicity=SEMI_MONTHLY`; período por defecto `2026-10-H2`; cifras solo de A y coincidentes con el JSON. | [ ] | |
+| 2 | Cambiar a Trimestral | Pulsar "Trimestral" | `Trimestral` | `periodicity=QUARTERLY`; período por defecto `2026-Q3`; cifras solo de A. | [ ] | |
+| 3 | Volver a Mensual | Pulsar "Mensual" | `Mensual` | Vuelve el último mes cerrado. | [ ] | |
+| 4 | Propietario sin operaciones | Entrar con un propietario sin registros en el período | N/A | `200`; todo en `$ 0.00 M` y conteos en 0, sin error. | [ ] | |
+| 5 | Período en curso | Elegir el período actual si la lista lo ofrece | N/A | `is_closed = false`; la pantalla lo identifica como abierto/parcial. | [ ] | |
+| 6 | Alternar pestañas de Finanzas | Ir a "Historial de Pagos" y volver al balance | N/A | El informe vuelve a cargar sin errores y conserva el alcance del propietario. | [ ] | |
+| 7 | Error de carga | Detener PostgreSQL y abrir el balance; restaurar | N/A | `500 INTERNAL_ERROR`; mensaje de error controlado, sin pantalla en blanco. | [ ] | **Posible defecto**: no se maneja el estado de error. |
 | 8 | Vista móvil | Reducir la ventana a < 768 px | N/A | KPI y paneles apilados; la barra flotante de Finanzas sigue accesible. | [ ] | |
 | 9 | Acceso por otro rol | Entrar como Arrendatario y abrir `/owner/finanzas/balance` por URL | N/A | Redirige fuera de la pantalla. | [ ] | Es navegación, no seguridad real. |
 | 10 | Sin datos de propietarios ajenos | Revisar toda la pantalla | N/A | No aparecen identificadores ni montos de otros propietarios. | [ ] | RF-006. |
+| 11 | Solo lectura | Verificar `v_financial_records` antes y después | N/A | Mismo conteo y mismos montos. | [ ] | |
 
 ##### Edge Cases & Boundary Conditions
 * **EC-001** : La ganancia del propietario es el total de sus dispersiones confirmadas (liquidación, compensaciones por cancelación y depósitos liquidados); no incluye costos operativos.

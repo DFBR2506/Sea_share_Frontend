@@ -14,7 +14,7 @@
 #### Objectives & Context *(mandatory)*
 
 ##### Test Objectives
-Este caso de prueba verifica que, cuando el guardado falla (validación rechazada por el servidor, error de persistencia o error de red), la pantalla `/finadmin/parametros` **no actualiza ningún parámetro**, informa un error controlado, **no** muestra "Versión #N guardada" y conserva la configuración anterior íntegra, sin perder lo que el usuario escribió para poder reintentar.
+Este caso de prueba verifica que, cuando el guardado falla (validación rechazada, error de persistencia o error de red), la pantalla `/finadmin/parametros` **no actualiza ningún parámetro**, informa un error controlado, **no** muestra "Versión #N guardada", conserva la configuración anterior íntegra en el backend y mantiene lo que el usuario escribió para poder reintentar.
 
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
@@ -30,49 +30,55 @@ Este caso de prueba verifica que, cuando el guardado falla (validación rechazad
 #### Prerequisites & Environment
 
 ##### Test Case Limitations
-* **Con los mocks actuales solo se ejecuta la parte de validación en cliente** (Section 1, pasos 1 a 5): `saveParams` nunca falla. Los fallos del servidor (Section 2) requieren backend real o simular la respuesta en DevTools (Network → bloquear petición / sobrescribir respuesta).
-* **Comportamiento actual del front no definido**: `FinanceParamsPage` no tiene manejo de error en el guardado (no hay `onError` ni mensaje). Si el servidor falla, probablemente no se muestre nada. Registrar lo observado y abrir defecto si no cumple lo esperado.
+* Se ejecuta contra el **backend M3 del entorno de pruebas**. La falla de persistencia se provoca de forma controlada (`docker compose stop postgres`); en un entorno compartido, coordinar la ventana de indisponibilidad.
+* **Comportamiento actual del front no definido**: `FinanceParamsPage` no maneja errores del guardado (`save.mutate` sin `onError`); si el servidor falla probablemente no se muestre nada. Registrar lo observado y abrir defecto si no cumple lo esperado.
 * El texto exacto del mensaje de error no está definido en el spec; los resultados esperados describen el comportamiento.
+* Los valores del seed (v7: comisión 15 %, seguro 15000, fin de semana 10 %, temporada alta 25 %) son **ilustrativos**.
 
 ##### Dependencies & Assumptions
-* TC-UC11-HU4-E1 debe haber pasado (el guardado exitoso funciona).
-* Para la Section 2: backend M3 accesible (`VITE_API_M3_URL`) y DevTools abierto en Network.
+* El frontend está conectado al backend de pruebas (`VITE_API_M3_URL`).
+* Seed del perfil `qa` aplicado (`v1..v7`, vigente `v7`); ejecutar sobre una BD recreada, no sobre la de TC-UC11-HU4-E1.
+* TC-UC11-HU4-E1 debe haber pasado (guardado exitoso verificado).
+* Acceso a `docker compose` para detener y restaurar `postgres`.
 
 ##### Preconditions & Default Setup
-* **Initial State** : sesión como Admin Financiero; versión vigente #12 con comisión `12`, seguro `18000`, fin de semana `8`, temporada alta `15`.
-* **Environment** : desarrollo local, Chrome/Firefox actual, ventana ≥ 1024 px.
+* **Initial State** : `financial_parameters` con `v7` vigente y `count = 7`.
+* **Environment** : backend en `http://localhost:8080`, frontend en `http://localhost:5173`, Chrome/Firefox actual, ventana ≥ 1024 px. BD: `docker exec -it seashare-postgres psql -U seashare -d seashare`.
 * **Test Accounts** : en `/login`, botón "Entrar como Admin Financiero".
 
 --------------------------------------------------------------------------------
 
 #### Test Execution Flow *(mandatory)*
 
-##### Section 1: Valores inválidos rechazados sin cambiar la configuración
+##### Section 1: Fallo del servidor durante el guardado
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Abrir la pantalla de parámetros | Entrar como Admin Financiero y abrir `/finadmin/parametros` | `http://localhost:5173/finadmin/parametros` | Se muestran los cuatro campos con los valores de la versión #12. | [ ] | |
-| 2 | Escribir un valor inválido | Reemplazar el seguro por un valor inválido | seguro `-1` | El campo muestra `-1`. | [ ] | |
-| 3 | Intentar guardar | Pulsar "Guardar cambios" | N/A | Aparece "Ingresa un monto mayor a 0" bajo el campo; no se muestra "Versión #N guardada". | [ ] | |
-| 4 | Verificar que no se envió nada | Revisar DevTools → Network | N/A | No se emitió ninguna petición de guardado (la validación la bloquea en el cliente). | [ ] | |
-| 5 | Verificar la configuración vigente | Pulsar "Cancelar" | N/A | Los campos vuelven a `12`, `18000`, `8` y `15`; sigue la versión #12. | [ ] | |
+| 1 | Fijar la línea base | `psql`: `SELECT * FROM financial_parameters ORDER BY version_number;` | N/A | `v7` vigente y `count = 7`; anotar los valores. | [ ] | |
+| 2 | Abrir la pantalla de parámetros | Entrar como Admin Financiero y abrir `/finadmin/parametros` | `http://localhost:5173/finadmin/parametros` | Se muestran los valores de `v7`. | [ ] | |
+| 3 | Preparar valores válidos | Editar los cuatro campos con valores que pasan la validación | comisión `18.5`, seguro `16500`, fin de semana `12`, temporada alta `30` | Sin mensajes de error en pantalla: el fallo debe ser de persistencia, no de validación. | [ ] | |
+| 4 | Provocar la falla de persistencia | `docker compose stop postgres` y pulsar "Guardar cambios" | N/A | El `PUT` responde `500` con `code = PARAMETERS_SAVE_FAILED` y `retryable = true`. | [ ] | Observar en DevTools → Network. |
+| 5 | Verificar el error en pantalla | Observar la pantalla | N/A | Se informa un error controlado sin detalles internos (sin SQL, trazas ni nombres de tabla); **no** aparece "Versión #N guardada". | [ ] | **Posible defecto**: hoy no se muestra ningún mensaje. |
+| 6 | Verificar que se conservan los valores escritos | Leer los cuatro campos | N/A | Conservan lo que escribió el usuario (no se pierde la edición). | [ ] | |
+| 7 | Verificar que el botón se rehabilita | Observar "Guardar cambios" | N/A | Vuelve a estar habilitado para reintentar; no queda en "guardando" indefinido. | [ ] | |
+| 8 | Restaurar la base y verificar la configuración anterior | `docker compose start postgres`; recargar la pantalla | N/A | Se muestran los valores de `v7`; ningún valor del intento fallido quedó aplicado. | [ ] | |
+| 9 | Verificar que no hubo cambios parciales | `psql`: `SELECT * FROM financial_parameters ORDER BY version_number;` | N/A | `count = 7`; no existe fila nueva ni versión parcial; `v7` intacta. | [ ] | |
+| 10 | Reintentar tras la recuperación | Editar de nuevo con los mismos valores y pulsar "Guardar cambios" | mismos valores del paso 3 | El `PUT` responde `200` con `version_number = 8`; aparece "Versión #8 guardada"; `count = 8`. | [ ] | Sin versiones duplicadas. |
 
-##### Section 2: Fallo del servidor durante el guardado (backend real o respuesta simulada)
+##### Section 2: Otros fallos y casos extremos de este escenario
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Rechazo de validación del servidor | Con valores que pasan la validación del cliente, simular una respuesta `400 VALIDATION_ERROR` y pulsar "Guardar cambios" | comisión `15` | Se informa un error controlado; **no** aparece "Versión #N guardada"; la versión vigente no cambia. | [ ] | |
-| 2 | Error de persistencia | Simular una respuesta `500` y guardar | comisión `15` | Se informa un error controlado; no se actualiza ningún parámetro. | [ ] | |
-| 3 | Error de red / backend apagado | Poner el navegador sin conexión (DevTools → Offline) y guardar | comisión `15` | Se informa un error controlado; no queda la pantalla en estado de "guardando" indefinido. | [ ] | |
-| 4 | Verificar que el botón se rehabilita | Tras el error, observar "Guardar cambios" | N/A | El botón vuelve a estar habilitado para reintentar. | [ ] | |
-| 5 | Verificar que se conservan los valores escritos | Tras el error, leer los cuatro campos | N/A | Los campos conservan lo que escribió el usuario (no se pierde la edición). | [ ] | |
-| 6 | Verificar la configuración persistida | Recargar la pantalla con el backend ya disponible | N/A | Se muestran los valores originales de la versión #12; no hay versión parcial ni nueva. | [ ] | |
-| 7 | Reintentar con éxito | Quitar la simulación de fallo y pulsar "Guardar cambios" | comisión `15` | Aparece "Versión #13 guardada" y no hay versiones duplicadas. | [ ] | |
-| 8 | Fallo parcial simulado | Simular fallo tras validar los cuatro campos con cambios en todos | cuatro valores nuevos | Ninguno de los cuatro queda persistido; no hay mezcla de valores nuevos y antiguos. | [ ] | Atomicidad. |
-| 9 | Error al guardar y luego "Cancelar" | Provocar el error y pulsar "Cancelar" | N/A | Se descartan los valores escritos y se muestran los vigentes; el mensaje de error desaparece. | [ ] | |
+| 1 | Validación bloqueada en el cliente | Escribir un seguro inválido y pulsar "Guardar cambios" | seguro `-1` | Aparece "Ingresa un monto mayor a 0"; no se envía `PUT`; `count` no cambia. | [ ] | |
+| 2 | Rechazo de validación del servidor | Con valores que pasan la validación del cliente, forzar un `400 VALIDATION_ERROR` (p. ej. interceptando la petición en DevTools con una comisión `150`) | comisión `150` | Se informa un error controlado en el campo afectado o en un aviso general; no aparece "Versión #N guardada"; la BD no cambia. | [ ] | El `400` trae `errors[].field`. |
+| 3 | Error de red | DevTools → Network → Offline y pulsar "Guardar cambios" | N/A | Se informa un error de conexión; no queda en "guardando" indefinido. | [ ] | |
+| 4 | Falla en la primera configuración | Tabla vacía (backend sin perfil `qa`) + PostgreSQL detenido + guardar valores válidos | N/A | Error controlado; tras restaurar, la tabla sigue vacía y la pantalla vuelve al estado "pendiente". | [ ] | Ver TC-UC11-HU3-E2. |
+| 5 | Fallo parcial simulado | Provocar el fallo con los cuatro campos cambiados | cuatro valores nuevos | Ninguno de los cuatro queda persistido; no hay mezcla de valores nuevos y antiguos. | [ ] | Atomicidad. |
+| 6 | Error al guardar y luego "Cancelar" | Provocar el error y pulsar "Cancelar" | N/A | Se descartan los valores escritos, se muestran los vigentes y el mensaje de error desaparece. | [ ] | |
+| 7 | Timeout con escritura ya confirmada | Guardar y cortar la conexión después del commit; reintentar | mismos valores | Al reintentar no se duplica la versión: si el commit ocurrió, se devuelve la vigente; si no, se crea una sola. | [ ] | Contrato §6. Verificar `count`. |
 
 ##### Edge Cases & Boundary Conditions
 * **EC-001** : Un guardado fallido no crea ninguna versión ni modifica ningún parámetro (atomicidad).
-* **EC-002** : El mensaje de éxito "Versión #N guardada" nunca debe aparecer si el guardado falló.
-* **EC-003** : El error no debe exponer detalles internos (trazas, SQL, nombres de tablas).
+* **EC-002** : "Versión #N guardada" nunca debe aparecer si el guardado falló.
+* **EC-003** : Un `5xx` nunca expone trazas, SQL ni nombres internos en pantalla.
 * **EC-004** : El usuario puede reintentar sin recargar la página.
 
 --------------------------------------------------------------------------------

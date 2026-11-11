@@ -14,7 +14,7 @@
 #### Objectives & Context *(mandatory)*
 
 ##### Test Objectives
-Este caso de prueba verifica que el Propietario, en `/owner/finanzas/historial`, puede filtrar sus registros por tipo de transacción (cobro, reembolso, dispersión o comisión), que el resultado contiene solo registros propios que coinciden con el filtro, que la paginación y el resumen se recalculan y que ningún filtro amplía el alcance a registros de otro propietario.
+Este caso de prueba verifica que el Propietario, en `/owner/finanzas/historial`, puede filtrar sus registros por tipo de transacción (cobro, reembolso, dispersión o comisión), que el resultado contiene solo registros propios que coinciden con el filtro, que la paginación y el resumen se recalculan con los datos del backend y que ningún filtro amplía el alcance a registros de otro propietario.
 
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
@@ -29,16 +29,17 @@ Este caso de prueba verifica que el Propietario, en `/owner/finanzas/historial`,
 #### Prerequisites & Environment
 
 ##### Test Case Limitations
-* La pantalla usa **datos mock en memoria** (`src/features/finance/api/mocks.js`). Los registros de `owner-0284` son 21: **8** cobros, **4** reembolsos, **5** dispersiones y **4** comisiones. Los totales son ilustrativos; ajustar al entorno.
-* **Brecha frente al spec**: el spec (RF-002) permite filtrar también por embarcación y propietario; la pantalla solo ofrece filtro por **tipo**. En el alcance propietario el `owner_id` es fijo y de solo lectura. Registrar la ausencia del filtro por embarcación como observación.
+* Se ejecuta contra el **backend M3 del entorno de pruebas**; los conteos por tipo se toman de la BD, no de valores fijos. Los registros se preparan con el dataset del TC (no forman parte del seed).
+* **Brecha frente al spec**: la API admite filtrar por tipo (`transaction_type`), embarcación (`boat_id`), reserva (`reservation_id`) y rango de fechas (`date_from`/`date_to`); la pantalla solo ofrece el filtro por **tipo**. La ausencia de los demás se registra como observación (H-07).
+* En el alcance propietario el `owner_id` es fijo y de solo lectura.
 
 ##### Dependencies & Assumptions
 * **TC-UC12-HU1-E1 debe haber pasado** (la consulta propia sin filtros funciona).
-* La aplicación corre en `http://localhost:5173` con el estado inicial de los mocks.
+* El frontend está conectado al backend de pruebas (`VITE_API_M3_URL`) y la sesión del Propietario usa el `owner_id` del dataset.
 
 ##### Preconditions & Default Setup
-* **Initial State** : sesión como Propietario (`owner-0284`); en el sistema hay también 3 registros de `owner-0310` (1 cobro, 1 reembolso, 1 comisión).
-* **Environment** : desarrollo local, Chrome/Firefox actual, ventana ≥ 1024 px.
+* **Initial State** : registros del propietario `a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d` (23, los cuatro tipos, al menos dos embarcaciones) y registros de otro propietario.
+* **Environment** : backend en `http://localhost:8080`, frontend en `http://localhost:5173`, Chrome/Firefox actual, ventana ≥ 1024 px. BD: `docker exec -it seashare-postgres psql -U seashare -d seashare`.
 * **Test Accounts** : en `/login`, botón "Entrar como Propietario".
 
 --------------------------------------------------------------------------------
@@ -48,34 +49,36 @@ Este caso de prueba verifica que el Propietario, en `/owner/finanzas/historial`,
 ##### Section 1: Filtrado por tipo de transacción
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Abrir el historial | Entrar como Propietario y abrir `/owner/finanzas/historial` | `http://localhost:5173/owner/finanzas/historial` | Se muestra la tabla con 10 filas y el resumen "1–10 de 21 registros · Página 1 de 3". | [ ] | |
-| 2 | Verificar las opciones del filtro | Leer "Filtrar por tipo" | N/A | Opciones: Todos, Cobro, Reembolso, Dispersión, Comisión; "Todos" seleccionado. | [ ] | |
-| 3 | Filtrar por Cobro | Pulsar "Cobro" | `Cobro` | Todas las filas muestran tipo "Cobro"; resumen "1–8 de 8 registros · Página 1 de 1". | [ ] | |
-| 4 | Verificar el alcance con el filtro | Leer la columna "Propietario" | N/A | Todas las filas muestran `owner-0284`. | [ ] | El filtro no amplía el alcance. |
-| 5 | Filtrar por Reembolso | Pulsar "Reembolso" | `Reembolso` | Solo filas "Reembolso"; resumen "1–4 de 4 registros · Página 1 de 1". | [ ] | |
-| 6 | Filtrar por Dispersión | Pulsar "Dispersión" | `Dispersión` | Solo filas "Dispersión"; resumen "1–5 de 5 registros · Página 1 de 1". | [ ] | |
-| 7 | Filtrar por Comisión | Pulsar "Comisión" | `Comisión` | Solo filas "Comisión"; resumen "1–4 de 4 registros · Página 1 de 1". | [ ] | RF-002: solo registros de comisión. |
-| 8 | Quitar el filtro | Pulsar "Todos" | `Todos` | Vuelve a 21 registros en 3 páginas. | [ ] | |
-| 9 | Verificar el contenido de una fila filtrada | Filtrar por "Dispersión" y leer la primera fila | N/A | Tipo "Dispersión", reserva `RSV-1045`, embarcación "Lagoon 42", monto `$ 280,000`, referencia `set_8181`. | [ ] | Valores del mock. |
+| 1 | Fijar la línea base por tipo | `psql`: `SELECT record_type, count(*) FROM v_financial_records WHERE owner_id = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d' GROUP BY record_type;` | N/A | Conteos por tipo del propietario (suman 23); anotarlos para contrastar. | [ ] | |
+| 2 | Abrir el historial | Entrar como Propietario y abrir `/owner/finanzas/historial` | `http://localhost:5173/owner/finanzas/historial` | Tabla con 10 filas y resumen "1–10 de 23 registros · Página 1 de 3". | [ ] | |
+| 3 | Verificar las opciones del filtro | Leer "Filtrar por tipo" | N/A | Opciones: Todos, Cobro, Reembolso, Dispersión, Comisión; "Todos" seleccionado. | [ ] | |
+| 4 | Filtrar por Cobro | Pulsar "Cobro" | `Cobro` | La petición lleva `transaction_type=CHARGE`; todas las filas son "Cobro"; el total del resumen es igual al conteo de `CHARGE` del paso 1. | [ ] | RF-002. |
+| 5 | Verificar el alcance con el filtro | Leer la columna "Propietario" | N/A | Todas las filas son de `a1b2c3d4-…`. | [ ] | El filtro no amplía el alcance. |
+| 6 | Filtrar por Reembolso | Pulsar "Reembolso" | `Reembolso` | Petición con `transaction_type=REFUND`; solo filas "Reembolso"; total igual al conteo de `REFUND`. | [ ] | |
+| 7 | Filtrar por Dispersión | Pulsar "Dispersión" | `Dispersión` | Petición con `transaction_type=SETTLEMENT`; solo filas "Dispersión"; total igual al conteo de `SETTLEMENT`. | [ ] | |
+| 8 | Filtrar por Comisión | Pulsar "Comisión" | `Comisión` | Petición con `transaction_type=COMMISSION`; solo filas "Comisión"; total igual al conteo de `COMMISSION`. | [ ] | RF-002: se filtra por tipo, no por monto. |
+| 9 | Contrastar el contenido con la BD | Para un tipo, comparar las filas con `SELECT * FROM v_financial_records WHERE owner_id = 'a1b2…' AND record_type = '<tipo>' ORDER BY created_at DESC, record_id DESC;` | N/A | Mismos registros y mismo orden; monto, fecha y referencia externa coinciden. | [ ] | |
+| 10 | Quitar el filtro | Pulsar "Todos" | `Todos` | Vuelve a 23 registros en 3 páginas. | [ ] | |
+| 11 | Verificar la suma de los tipos | Sumar los totales de los cuatro tipos | N/A | La suma es 23, igual al total sin filtro. | [ ] | |
 
 ##### Section 2: Errores y casos extremos de este escenario
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Filtrar estando en otra página | Ir a la página 3 sin filtro y pulsar "Comisión" | N/A | Vuelve a la página 1 con los 4 resultados; no queda en una página inexistente. | [ ] | |
-| 2 | Filtro combinado con tamaño de página | Filtrar por "Cobro" y cambiar el tamaño de página a 5 | `Cobro`, `5` | 5 filas, resumen "1–5 de 8 registros · Página 1 de 2"; la página 2 muestra 3 filas. | [ ] | |
-| 3 | Cambiar de filtro con un tamaño personalizado | Con tamaño 5, cambiar de "Cobro" a "Reembolso" | N/A | Se mantiene el tamaño 5 y se muestran los 4 reembolsos. | [ ] | |
-| 4 | Filtro sin resultados | Aplicar un filtro sin registros (solo backend real, p. ej. propietario sin comisiones) | N/A | "No hay registros para este filtro." sin error; el resumen muestra 0 registros. | [ ] | Página vacía, no es un error. |
+| 1 | Filtrar estando en otra página | Ir a la página 3 sin filtro y pulsar "Comisión" | N/A | Vuelve a la página 1 con los resultados del filtro; no queda en una página inexistente. | [ ] | |
+| 2 | Filtro combinado con tamaño de página | Filtrar por un tipo con más de 5 registros y cambiar el tamaño a 5 | tamaño `5` | La petición lleva `transaction_type` y `size=5`; resumen y páginas coherentes con el total filtrado. | [ ] | |
+| 3 | Cambiar de filtro con tamaño personalizado | Con tamaño 5, cambiar de un tipo a otro | N/A | Se mantiene el tamaño 5 y se muestran los resultados del nuevo tipo. | [ ] | |
+| 4 | Filtro sin resultados | Aplicar un filtro sin registros (usar un propietario sin comisiones, si el dataset lo permite) | N/A | "No hay registros para este filtro." sin error; el backend responde `200` con página vacía. | [ ] | Página vacía, no es un error. |
 | 5 | Selección visual del filtro | Observar el selector tras cambiar el filtro | N/A | El indicador deslizante marca la opción activa. | [ ] | |
-| 6 | Navegación por teclado | Mover el foco por las opciones del filtro con Tab/flechas y activar con Enter o Espacio | N/A | Se puede cambiar el filtro solo con teclado. | [ ] | Accesibilidad. |
-| 7 | Filtro por embarcación (brecha del spec) | Buscar un filtro por embarcación en la pantalla | N/A | No existe; registrar como brecha frente a RF-002. | [ ] | No es un fallo del TC. |
-| 8 | Alcance con `owner_id` manipulado | Intentar editar el campo `owner_id` | `owner-0310` | El campo es de solo lectura y no se puede cambiar. | [ ] | Sin validación de identidad real (seguridad fuera de alcance). |
-| 9 | Error de carga al filtrar (solo backend real) | Simular `500` y pulsar un filtro | N/A | Aparece "No se pudieron cargar los registros." | [ ] | |
+| 6 | Navegación por teclado | Mover el foco por las opciones con Tab/flechas y activar con Enter o Espacio | N/A | Se puede cambiar el filtro solo con teclado. | [ ] | Accesibilidad. |
+| 7 | Filtros que el API admite y la pantalla no ofrece | Buscar filtros por embarcación, reserva y rango de fechas | N/A | No existen en la pantalla; registrar como brecha frente a RF-002 y el contrato. | [ ] | No es un fallo del TC. |
+| 8 | Alcance con `owner_id` manipulado | Intentar editar el campo `owner_id` | `owner-ajeno` | El campo es de solo lectura y no se puede cambiar. | [ ] | Sin validación de identidad real (seguridad fuera de alcance). |
+| 9 | Error de carga al filtrar | Detener PostgreSQL, pulsar un filtro; restaurar | N/A | Aparece "No se pudieron cargar los registros." | [ ] | |
 
 ##### Edge Cases & Boundary Conditions
 * **EC-001** : Aplicar un filtro siempre reinicia la paginación a la página 1.
 * **EC-002** : El filtro por tipo se aplica **después** del alcance: ningún filtro muestra registros de otro propietario.
-* **EC-003** : La suma de los resultados de cada tipo (8 + 4 + 5 + 4) coincide con el total sin filtro (21).
-* **EC-004** : Comisión se filtra por tipo de registro, no por monto.
+* **EC-003** : La suma de los resultados de cada tipo coincide con el total sin filtro.
+* **EC-004** : Comisión se filtra por tipo de registro, no por comparación numérica del monto.
 
 --------------------------------------------------------------------------------
 

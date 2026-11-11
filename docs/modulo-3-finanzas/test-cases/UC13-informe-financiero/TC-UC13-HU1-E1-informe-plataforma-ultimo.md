@@ -14,7 +14,7 @@
 #### Objectives & Context *(mandatory)*
 
 ##### Test Objectives
-Este caso de prueba verifica que el Administrador Financiero, al abrir "Informe" (`/finadmin/informe`), ve por defecto el **último período cerrado** de la periodicidad seleccionada con los agregados de toda la plataforma (cobros, reembolsos, dispersiones y comisiones confirmados), el neto generado, la cantidad de registros por tipo y la comparación con el período inmediatamente anterior.
+Este caso de prueba verifica que el Administrador Financiero, al abrir "Informe" (`/finadmin/informe`), ve por defecto el **último período cerrado** de la periodicidad seleccionada con los agregados de toda la plataforma que devuelve el backend (cobros, reembolsos, dispersiones y comisiones confirmados), el neto generado, la cantidad de registros por tipo y la comparación con el período inmediatamente anterior.
 
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
@@ -29,18 +29,18 @@ Este caso de prueba verifica que el Administrador Financiero, al abrir "Informe"
 #### Prerequisites & Environment
 
 ##### Test Case Limitations
-* La pantalla usa **datos mock en memoria** (`src/features/finance/api/mocks.js`) con una latencia simulada de ~200 ms. Los valores de este TC (Mensual: cobros 18.42 M, reembolsos 2.16 M, dispersiones 11.78 M, comisiones 1.42 M, neto 0.62 M) son **ilustrativos**; ajustar a los del entorno.
-* **Inconsistencia de los mocks**: el neto del mock (0.62 M) no cumple la fórmula del spec `cobros − reembolsos − dispersiones` (18.42 − 2.16 − 11.78 = 4.48 M). El paso 12 fallará con mocks; **no es un defecto del front**, pero debe cumplirse con backend real.
-* Los mocks devuelven los mismos valores para cualquier período de una periodicidad; solo cambia la etiqueta del período.
-* Los mocks solo ofrecen períodos cerrados; el período en curso (informe abierto) no se puede probar con ellos.
+* Se ejecuta contra el **backend M3 del entorno de pruebas**. Los registros del dataset (período 2026-10) **no forman parte del seed**: se preparan con el dataset de este TC.
+* Los montos y cantidades son **ilustrativos y coherentes entre sí**; ajustar al dataset del entorno.
+* La fecha de referencia es 2026-11-02; mientras la ejecución ocurra en noviembre de 2026 el último mes cerrado sigue siendo `2026-10` (cuatrimestral: `2026-Q3`; quincena: `2026-10-H2`). Si se ejecuta después, recalcular el período esperado.
+* La pantalla muestra los montos en **millones de COP con dos decimales** (`$ 1.15 M`); el valor exacto se contrasta contra el JSON del backend en DevTools.
 
 ##### Dependencies & Assumptions
-* Ninguna dependencia de otros TC.
-* La aplicación corre en `http://localhost:5173` con el estado inicial de los mocks.
+* El frontend está conectado al backend de pruebas (`VITE_API_M3_URL`).
+* Existen registros financieros **confirmados** de varios propietarios y períodos (generados por UC05, UC09 y UC10 o cargados como dataset).
 
 ##### Preconditions & Default Setup
-* **Initial State** : sesión como Admin Financiero; la plataforma tiene registros confirmados de varios propietarios.
-* **Environment** : desarrollo local, Chrome/Firefox actual, ventana ≥ 1024 px.
+* **Initial State** : dataset mensual 2026-10 con 10 cobros, 2 reembolsos, 8 dispersiones y 8 comisiones. Totales: cobros `1150000.00`, reembolsos `100000.00`, dispersiones `900000.00`, comisiones `135000.00`, neto `150000.00`. Período 2026-09 (comparación): neto `125000.00`.
+* **Environment** : backend en `http://localhost:8080`, frontend en `http://localhost:5173`, Chrome/Firefox actual, ventana ≥ 1024 px. BD: `docker exec -it seashare-postgres psql -U seashare -d seashare`.
 * **Test Accounts** : en `/login`, botón "Entrar como Admin Financiero".
 
 --------------------------------------------------------------------------------
@@ -50,42 +50,46 @@ Este caso de prueba verifica que el Administrador Financiero, al abrir "Informe"
 ##### Section 1: Informe del último período cerrado (alcance plataforma)
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Entrar como Admin Financiero | Abrir `/login` y pulsar "Entrar como Admin Financiero" | `http://localhost:5173/login` | Redirige a `/finadmin/parametros`. | [ ] | |
-| 2 | Abrir el informe | Pulsar "Informe" en el menú | N/A | La URL es `/finadmin/informe`; se muestra "Informe financiero". | [ ] | |
-| 3 | Verificar el estado de carga | Observar la pantalla al abrir | N/A | Se muestra brevemente "Cargando…" y luego el informe. | [ ] | |
-| 4 | Verificar los controles por defecto | Leer "Periodicidad" y "Período" | N/A | "Mensual" seleccionado y período "Septiembre 2026" (el más reciente de la lista). | [ ] | RF-003: último período cerrado. |
-| 5 | Verificar los cobros | Leer "Cobros confirmados" | N/A | `$ 18.42 M` y "+12.4% vs. período anterior". | [ ] | |
-| 6 | Verificar los reembolsos | Leer "Reembolsos confirmados" | N/A | `$ 2.16 M` y "−4.8% vs. período anterior". | [ ] | |
-| 7 | Verificar las dispersiones | Leer "Dispersiones confirmadas" | N/A | `$ 11.78 M` y "+9.1% vs. período anterior". | [ ] | |
-| 8 | Verificar las comisiones | Leer "Comisiones confirmadas" | N/A | `$ 1.42 M` con la nota "Métrica informativa". | [ ] | La comisión es informativa e independiente. |
-| 9 | Verificar el neto generado | Leer el panel grande | N/A | "Neto generado", "Cobros − reembolsos − dispersiones" y "+ $ 0.62 M · +16.1% frente al período anterior". | [ ] | |
-| 10 | Verificar los registros por tipo | Leer "Registros por tipo" | N/A | Cobro 42, Reembolso 8, Dispersión 37, Comisión 42. | [ ] | |
-| 11 | Verificar la nota al pie | Leer el pie del informe | N/A | "Período cerrado · corte al 30 sep 2026 · garantías pendientes excluidas". | [ ] | RF-014. |
-| 12 | Verificar la fórmula del neto | Calcular `cobros − reembolsos − dispersiones` con los valores mostrados | 18.42 − 2.16 − 11.78 | El neto mostrado es igual al resultado (4.48 M con estos datos). | [ ] | **Con mocks falla** (0.62 M); con backend real debe pasar. |
-| 13 | Verificar que la comisión no altera el neto | Comparar el neto con y sin sumar/restar comisiones | N/A | El neto no incluye las comisiones. | [ ] | RF-009. Verificable con backend real. |
+| 1 | Verificar el dataset del período | `psql`: `SELECT record_type, COUNT(*), SUM(amount) FROM v_financial_records WHERE created_at >= '2026-10-01T00:00:00-05:00' AND created_at < '2026-11-01T00:00:00-05:00' GROUP BY record_type;` | `2026-10`, America/Bogota | 10 cobros, 2 reembolsos, 8 dispersiones y 8 comisiones con los totales de la precondición. | [ ] | |
+| 2 | Entrar como Admin Financiero | Abrir `/login` y pulsar "Entrar como Admin Financiero" | `http://localhost:5173/login` | Redirige a `/finadmin/parametros`. | [ ] | |
+| 3 | Abrir el informe | Pulsar "Informe" en el menú | N/A | La URL es `/finadmin/informe`; se muestra "Informe financiero". | [ ] | |
+| 4 | Verificar la petición | DevTools → Network | N/A | `GET /api/v1/financial-report?scope=PLATFORM&periodicity=MONTHLY` (con o sin `period`) responde `200`; anotar el JSON. | [ ] | |
+| 5 | Verificar el estado de carga | Observar la pantalla al abrir | N/A | Se muestra brevemente "Cargando…" y luego el informe. | [ ] | |
+| 6 | Verificar los controles por defecto | Leer "Periodicidad" y "Período" | N/A | "Mensual" seleccionado y el último período cerrado (octubre de 2026); coincide con `period = "2026-10"` y `is_closed = true` del JSON. | [ ] | RF-003. |
+| 7 | Verificar los cobros | Leer "Cobros confirmados" | N/A | `$ 1.15 M` (`total_collections = "1150000.00"`). | [ ] | |
+| 8 | Verificar los reembolsos | Leer "Reembolsos confirmados" | N/A | `$ 0.10 M` (`total_refunds = "100000.00"`). | [ ] | |
+| 9 | Verificar las dispersiones | Leer "Dispersiones confirmadas" | N/A | `$ 0.90 M` (`total_settlements = "900000.00"`). | [ ] | |
+| 10 | Verificar las comisiones | Leer "Comisiones confirmadas" | N/A | Aprox. `$ 0.14 M` (`total_commissions = "135000.00"`), con la nota "Métrica informativa". | [ ] | La comisión es informativa e independiente. El redondeo a millones pierde precisión (H-12). |
+| 11 | Verificar el neto generado | Leer el panel grande | N/A | "Neto generado", "Cobros − reembolsos − dispersiones" y valor `$ 0.15 M` (`net_amount = "150000.00"`). | [ ] | RF-008. |
+| 12 | Verificar la comparación con el período anterior | Leer la variación del panel grande | período anterior `2026-09`, neto `125000.00` | Variación absoluta de `25000.00` y porcentual de `20.00 %` frente a septiembre de 2026 (`comparison` del JSON). | [ ] | RF-010. |
+| 13 | Verificar los registros por tipo | Leer "Registros por tipo" | N/A | Cobro 10, Reembolso 2, Dispersión 8, Comisión 8 (`counts`). | [ ] | |
+| 14 | Verificar la nota al pie | Leer el pie del informe | N/A | Indica período cerrado y que las garantías pendientes están excluidas. | [ ] | RF-014. |
+| 15 | Verificar la fórmula del neto | Calcular `cobros − reembolsos − dispersiones` con los valores del JSON | 1150000 − 100000 − 900000 | Igual al neto mostrado (`150000.00`); la comisión no se suma ni se resta. | [ ] | RF-009. |
+| 16 | Verificar que no hay detalle individual | Revisar la pantalla y el JSON | N/A | Solo agregados; no aparece el detalle paginado de UC12. | [ ] | RF-011. |
 
 ##### Section 2: Otras periodicidades, errores y casos extremos
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Cambiar a Quincenal | Pulsar "Quincenal" en "Periodicidad" | `Quincenal` | Período por defecto "1ª quincena sep 2026"; cobros `$ 9.10 M`, reembolsos `$ 0.94 M`, dispersiones `$ 5.70 M`, comisiones `$ 0.71 M`, neto `$ 0.30 M`; pie "corte al 15 sep 2026". | [ ] | |
-| 2 | Cambiar a Trimestral | Pulsar "Trimestral" | `Trimestral` | Período por defecto "3T 2026"; cobros `$ 52.80 M`, reembolsos `$ 6.40 M`, dispersiones `$ 33.90 M`, comisiones `$ 4.10 M`, neto `$ 1.90 M`. | [ ] | |
-| 3 | Volver a Mensual | Pulsar "Mensual" | `Mensual` | Vuelve el período más reciente "Septiembre 2026". | [ ] | Cambiar la periodicidad reinicia el período. |
-| 4 | Verificar que no hay rangos libres | Buscar campos de fecha desde/hasta | N/A | No existen; solo se puede elegir entre los períodos de la lista. | [ ] | RF-004. |
-| 5 | Verificar que no se muestran datos de registros individuales | Revisar la pantalla | N/A | Solo hay agregados; no aparece el detalle paginado (UC12). | [ ] | RF-011. |
-| 6 | Período sin registros (solo backend real) | Elegir un período sin operaciones confirmadas | N/A | Todas las métricas en `$ 0.00 M` y todos los conteos en 0, sin error. | [ ] | Variación no calculable si el anterior es 0: verificar cómo se muestra. |
-| 7 | Período en curso (solo backend real) | Consultar el período actual | N/A | Se identifica como abierto/parcial con corte a la fecha de consulta. | [ ] | Los mocks no lo ofrecen. |
-| 8 | Error de carga (solo backend real) | Apagar el backend o simular `500` y abrir el informe | N/A | Aparece un mensaje de error controlado, sin pantalla en blanco. | [ ] | **Posible defecto**: `FinanceReportPage` no maneja el estado de error y puede fallar al leer `r.cobros`. |
-| 9 | Periodicidad o período inválido (solo backend real) | Simular `400 INVALID_PERIOD` | N/A | Se informa un error controlado y no se muestran cifras. | [ ] | La interfaz solo permite valores de la lista. |
+| 1 | Cambiar a Quincenal | Pulsar "Quincenal" | `Quincenal` | La petición lleva `periodicity=SEMI_MONTHLY`; período por defecto = 2ª quincena de octubre de 2026 (`2026-10-H2`), `is_closed = true`; las cifras coinciden con el JSON. | [ ] | |
+| 2 | Cambiar a Trimestral | Pulsar "Trimestral" | `Trimestral` | `periodicity=QUARTERLY`; período por defecto = 3.er trimestre de 2026 (`2026-Q3`), cerrado; las cifras coinciden con el JSON. | [ ] | |
+| 3 | Volver a Mensual | Pulsar "Mensual" | `Mensual` | Vuelve el último mes cerrado (octubre de 2026). | [ ] | Cambiar la periodicidad reinicia el período. |
+| 4 | Verificar que no hay rangos libres | Buscar campos de fecha desde/hasta | N/A | No existen; solo se elige entre los períodos de la lista. | [ ] | RF-004. |
+| 5 | Período sin registros | Elegir un período sin operaciones confirmadas (p. ej. enero de 2020 si la lista lo permite) | N/A | El backend responde `200` con todo en cero; la pantalla muestra `$ 0.00 M` y conteos en 0, sin error. | [ ] | Variación no calculable si el anterior es 0: verificar cómo se muestra. |
+| 6 | Período en curso | Elegir el período actual (noviembre de 2026) si la lista lo ofrece | N/A | `is_closed = false`; la pantalla lo identifica como abierto/parcial con corte a la fecha de consulta. | [ ] | La lista de períodos debería marcar o excluir el período abierto. |
+| 7 | Error de carga | Detener PostgreSQL y abrir el informe; restaurar | N/A | El backend responde `500 INTERNAL_ERROR`; la pantalla muestra un mensaje de error controlado, sin pantalla en blanco. | [ ] | **Posible defecto**: `FinanceReportPage` no maneja el estado de error y puede fallar al leer `r.cobros`. |
+| 8 | Período inválido | Interceptar la petición y enviar `period=2026-13` | `2026-13` | El backend responde `400 INVALID_PERIOD` y la pantalla informa un error controlado, sin cifras. | [ ] | La interfaz solo permite valores de la lista. |
+| 9 | Variación con período anterior en cero | Elegir el primer período con datos (cuyo anterior no tiene registros) | N/A | `percentage_variation = null`; la pantalla muestra "no calculable" y no `NaN`, `Infinity` ni vacío confuso. | [ ] | RF-010. |
 | 10 | Recargar la página | Pulsar F5 | N/A | Vuelve al estado por defecto (Mensual, último período) sin volver al login. | [ ] | |
 | 11 | Vista móvil | Reducir la ventana a < 768 px | N/A | Los KPI y paneles se apilan y todo es legible sin scroll horizontal. | [ ] | |
 | 12 | Acceso por otro rol | Entrar como Propietario y abrir `/finadmin/informe` por URL | N/A | Redirige fuera de la pantalla. | [ ] | Es navegación, no seguridad real. |
+| 13 | Solo lectura | Verificar `v_financial_records` antes y después | N/A | Mismo conteo y mismos montos. | [ ] | |
 
 ##### Edge Cases & Boundary Conditions
-* **EC-001** : Quincenas del día 1 al 15 y del 16 al fin de mes; meses calendario; trimestres calendario.
+* **EC-001** : Quincenas del día 1 al 15 y del 16 al fin de mes; meses calendario; trimestres calendario (America/Bogota).
 * **EC-002** : Por defecto se muestra siempre un período **cerrado**; el período en curso solo se ve si se elige y se marca como abierto.
 * **EC-003** : Los depósitos de garantía pendientes no entran en las métricas.
-* **EC-004** : Si el valor del período anterior es 0, la variación porcentual debe mostrarse como "no calculable" (no `Infinity` ni `NaN`).
-* **EC-005** : Los montos se muestran en millones de COP con dos decimales (`$ 18.42 M`).
+* **EC-004** : Si el período anterior vale 0, la variación porcentual debe mostrarse como "no calculable".
+* **EC-005** : El backend entrega una sola comparación (del neto o ganancia); si la pantalla muestra variaciones por indicador (cobros, reembolsos, dispersiones), verificar de dónde salen (H-13).
 
 --------------------------------------------------------------------------------
 

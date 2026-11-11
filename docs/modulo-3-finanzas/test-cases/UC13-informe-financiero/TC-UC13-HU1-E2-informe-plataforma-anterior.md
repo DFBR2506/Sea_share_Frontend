@@ -14,7 +14,7 @@
 #### Objectives & Context *(mandatory)*
 
 ##### Test Objectives
-Este caso de prueba verifica que el Administrador Financiero puede seleccionar un **período anterior** de la periodicidad elegida en `/finadmin/informe`, que el informe se recarga con los agregados de toda la plataforma para ese período y su comparación con el período inmediatamente anterior equivalente, y que solo se pueden elegir períodos predefinidos (no rangos libres).
+Este caso de prueba verifica que el Administrador Financiero puede seleccionar un **período anterior** de la periodicidad elegida en `/finadmin/informe`, que el informe se recarga con los agregados de toda la plataforma para **ese** período (sin mezclar otros) y su comparación con el período inmediatamente anterior equivalente, y que solo se pueden elegir períodos predefinidos (no rangos libres).
 
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
@@ -29,17 +29,17 @@ Este caso de prueba verifica que el Administrador Financiero puede seleccionar u
 #### Prerequisites & Environment
 
 ##### Test Case Limitations
-* **Con los mocks actuales, al cambiar de período los valores no cambian**: `getReport` devuelve los mismos datos de la periodicidad para cualquier período; solo cambia lo seleccionado en el desplegable. Los pasos que comparan cifras entre períodos solo son verificables con **backend real**.
-* Períodos disponibles en los mocks: Quincenal (`1ª quincena sep 2026`, `2ª quincena ago 2026`), Mensual (`Septiembre 2026`, `Agosto 2026`, `Julio 2026`), Trimestral (`3T 2026`, `2T 2026`). Son ilustrativos.
-* La pantalla no muestra el nombre del período dentro del informe, solo en el desplegable "Período".
+* Se ejecuta contra el **backend M3 del entorno de pruebas**. El dataset (períodos 2026-07 a 2026-10) **no forma parte del seed**: se prepara con el dataset de este TC, con datos distintos en cada período para detectar mezclas.
+* Los montos son **ilustrativos**; ajustar al dataset del entorno. La pantalla muestra montos en millones de COP (`$ 0.80 M`); el valor exacto se contrasta contra el JSON.
+* El contrato no define un endpoint que liste períodos disponibles: verificar de dónde sale la lista del desplegable "Período" y que sus valores se traducen a períodos canónicos válidos (`2026-08`, `2026-Q2`, `2026-09-H1`).
 
 ##### Dependencies & Assumptions
 * **TC-UC13-HU1-E1 debe haber pasado** (el informe del último período cerrado funciona).
-* La aplicación corre en `http://localhost:5173` con el estado inicial de los mocks.
+* El frontend está conectado al backend de pruebas (`VITE_API_M3_URL`).
 
 ##### Preconditions & Default Setup
-* **Initial State** : sesión como Admin Financiero; hay registros confirmados en varios períodos.
-* **Environment** : desarrollo local, Chrome/Firefox actual, ventana ≥ 1024 px.
+* **Initial State** : 2026-08 con 6 cobros `800000.00`, 1 reembolso `50000.00`, 5 dispersiones `700000.00`, 5 comisiones `105000.00` (neto `50000.00`); 2026-07 (comparación) con neto `40000.00`; 2026-09 y 2026-10 con datos distintos.
+* **Environment** : backend en `http://localhost:8080`, frontend en `http://localhost:5173`, Chrome/Firefox actual, ventana ≥ 1024 px. BD: `docker exec -it seashare-postgres psql -U seashare -d seashare`.
 * **Test Accounts** : en `/login`, botón "Entrar como Admin Financiero".
 
 --------------------------------------------------------------------------------
@@ -49,32 +49,35 @@ Este caso de prueba verifica que el Administrador Financiero puede seleccionar u
 ##### Section 1: Selección de un período anterior
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Abrir el informe | Entrar como Admin Financiero y pulsar "Informe" | `http://localhost:5173/finadmin/informe` | Mensual, período "Septiembre 2026" y los datos del último período cerrado. | [ ] | Anotar los valores como línea base. |
-| 2 | Abrir la lista de períodos | Pulsar el desplegable "Período" | N/A | Se listan "Septiembre 2026", "Agosto 2026" y "Julio 2026"; no hay campos de fecha libres. | [ ] | RF-004. |
-| 3 | Seleccionar un período anterior | Elegir "Agosto 2026" | `Agosto 2026` | El desplegable muestra "Agosto 2026" y el informe se recarga sin errores. | [ ] | |
-| 4 | Verificar la recarga | Observar la pantalla tras elegir | N/A | Se actualizan los KPI, el neto, los conteos y la nota al pie con los datos del período elegido. | [ ] | **Con mocks los valores son iguales a la línea base.** |
-| 5 | Verificar la comparación | Leer las variaciones de los KPI | N/A | Las variaciones comparan "Agosto 2026" con el período inmediatamente anterior (Julio 2026), no con septiembre. | [ ] | Solo verificable con backend real. |
-| 6 | Verificar la nota al pie | Leer el pie del informe | N/A | Indica que es un período cerrado. | [ ] | |
-| 7 | Seleccionar el período más antiguo | Elegir "Julio 2026" | `Julio 2026` | Se carga el informe de julio; si no existe un período anterior para comparar, se indica sin error. | [ ] | Variación no calculable si no hay base. |
-| 8 | Volver al último período | Elegir "Septiembre 2026" | `Septiembre 2026` | Vuelve a los datos de la línea base. | [ ] | |
+| 1 | Verificar los datos del período elegido | `psql`: `SELECT record_type, COUNT(*), SUM(amount) FROM v_financial_records WHERE created_at >= '2026-08-01T00:00:00-05:00' AND created_at < '2026-09-01T00:00:00-05:00' GROUP BY record_type;` | `2026-08` | 6 cobros, 1 reembolso, 5 dispersiones y 5 comisiones con los totales de la precondición. | [ ] | |
+| 2 | Abrir el informe | Entrar como Admin Financiero y pulsar "Informe" | `http://localhost:5173/finadmin/informe` | Mensual y el último período cerrado (octubre de 2026). | [ ] | Anotar los valores como línea base. |
+| 3 | Abrir la lista de períodos | Pulsar el desplegable "Período" | N/A | Se listan períodos cerrados (el más reciente primero), incluido agosto de 2026; no hay campos de fecha libres. | [ ] | RF-004. |
+| 4 | Seleccionar un período anterior | Elegir agosto de 2026 | `Agosto 2026` | La petición lleva `period=2026-08`; el desplegable muestra el período elegido y el informe se recarga sin errores. | [ ] | |
+| 5 | Verificar el período devuelto | Comparar con el JSON en DevTools | N/A | `period = "2026-08"`, `is_closed = true`, `scope = "PLATFORM"`, `periodicity = "MONTHLY"`. | [ ] | |
+| 6 | Verificar que no se mezclan períodos | Leer los KPI | N/A | Cobros `$ 0.80 M`, reembolsos `$ 0.05 M`, dispersiones `$ 0.70 M`, comisiones aprox. `$ 0.11 M`; ningún valor de 2026-09 ni 2026-10. | [ ] | RF-005. |
+| 7 | Verificar el neto | Leer el panel grande | N/A | `$ 0.05 M` (`net_amount = "50000.00"`). | [ ] | RF-008. |
+| 8 | Verificar los registros por tipo | Leer "Registros por tipo" | N/A | Cobro 6, Reembolso 1, Dispersión 5, Comisión 5. | [ ] | |
+| 9 | Verificar la comparación | Leer la variación | período anterior `2026-07`, neto `40000.00` | Comparación con julio de 2026 (no con septiembre): variación absoluta `10000.00` y porcentual `25.00 %`. | [ ] | RF-010. |
+| 10 | Verificar que el período elegido prevalece | Volver al último período y comparar | N/A | Con el último período se ve octubre (`2026-10`); con agosto se ve exactamente agosto. | [ ] | RF-003, RF-004. |
+| 11 | Verificar que la consulta no modifica registros | Contar filas y sumar montos en `v_financial_records` antes y después | N/A | Mismo conteo y mismos montos. | [ ] | |
 
 ##### Section 2: Errores y casos extremos de este escenario
 | Step # | Step Description | Path & Action | Test Data | Expected Results | Pass/Fail | Comments |
 | :---: | ------ | ------ | ------ | ------ | :---: | ------ |
-| 1 | Período anterior en Quincenal | Elegir "Quincenal" y luego "2ª quincena ago 2026" | `Quincenal` | Se carga el informe sin errores; el desplegable muestra la quincena elegida. | [ ] | |
-| 2 | Período anterior en Trimestral | Elegir "Trimestral" y luego "2T 2026" | `Trimestral` | Se carga el informe sin errores; el desplegable muestra el trimestre elegido. | [ ] | |
-| 3 | Cambiar de periodicidad con un período anterior elegido | Con "Agosto 2026" en Mensual, pulsar "Trimestral" | N/A | El período vuelve al más reciente de la nueva periodicidad ("3T 2026"); no queda un período de otra periodicidad. | [ ] | |
+| 1 | Período anterior en Trimestral | Pulsar "Trimestral" y elegir el 2.º trimestre de 2026 | `2026-Q2` | La petición lleva `periodicity=QUARTERLY&period=2026-Q2`; la comparación es con `2026-Q1`. | [ ] | |
+| 2 | Período anterior en Quincenal | Pulsar "Quincenal" y elegir la 1ª quincena de septiembre de 2026 | `2026-09-H1` | La petición lleva `periodicity=SEMI_MONTHLY&period=2026-09-H1`; la comparación es con `2026-08-H2`. | [ ] | |
+| 3 | Cambiar de periodicidad con un período anterior elegido | Con agosto elegido en Mensual, pulsar "Trimestral" | N/A | El período vuelve al más reciente de la nueva periodicidad; no queda un período de otra periodicidad. | [ ] | |
 | 4 | Cambiar de período repetidamente | Alternar rápido entre tres períodos | N/A | La pantalla termina mostrando el último período elegido, sin datos de uno anterior mezclados. | [ ] | Carrera entre peticiones. |
-| 5 | Período sin registros (solo backend real) | Elegir un período sin operaciones confirmadas | N/A | Métricas y conteos en 0, sin error; la variación se muestra como no calculable. | [ ] | |
-| 6 | Período inválido (solo backend real) | Simular `400 INVALID_PERIOD` | N/A | Se informa un error controlado y no se muestran cifras. | [ ] | La interfaz no permite escribir períodos libres. |
-| 7 | Error de carga al cambiar de período (solo backend real) | Simular `500` y elegir otro período | N/A | Mensaje de error controlado; la pantalla no queda en blanco. | [ ] | **Posible defecto**: la pantalla no maneja el estado de error. |
+| 5 | Período sin registros | Elegir un período sin operaciones confirmadas | N/A | `200` con métricas y conteos en 0, sin error; variación como no calculable si el anterior también es 0. | [ ] | |
+| 6 | Período inválido | Interceptar y enviar `period=2026-Q5` con `periodicity=QUARTERLY` | `2026-Q5` | `400 INVALID_PERIOD`; la pantalla informa un error controlado y no muestra cifras. | [ ] | La interfaz no permite escribir períodos libres. |
+| 7 | Error de carga al cambiar de período | Detener PostgreSQL y elegir otro período; restaurar | N/A | `500 INTERNAL_ERROR`; mensaje de error controlado, sin pantalla en blanco. | [ ] | **Posible defecto**: la pantalla no maneja el estado de error. |
 | 8 | Navegación por teclado | Operar el desplegable y las pestañas con teclado | N/A | Se puede elegir periodicidad y período solo con teclado. | [ ] | Accesibilidad. |
-| 9 | Solo lectura | Revisar la pantalla | N/A | Elegir un período no modifica registros financieros. | [ ] | |
+| 9 | Estabilidad de un período cerrado | Consultar dos veces el mismo período anterior | N/A | Las cifras son idénticas en ambas consultas. | [ ] | |
 
 ##### Edge Cases & Boundary Conditions
 * **EC-001** : La comparación siempre es contra el período inmediatamente anterior **equivalente** al elegido, no contra el último cerrado.
 * **EC-002** : Cada periodicidad ofrece su propia lista de períodos; no se mezclan.
-* **EC-003** : El informe de un período cerrado no cambia entre consultas (es estable en el tiempo).
+* **EC-003** : El informe de un período cerrado no cambia entre consultas.
 * **EC-004** : No hay rangos libres de fechas.
 
 --------------------------------------------------------------------------------
