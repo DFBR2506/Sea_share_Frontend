@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { formatRange, fromISO, money, nightsBetween } from '@/lib/dates'
+import { formatRange, money, nightsBetween } from '@/lib/dates'
 import { priceBreakdown } from '../api'
+import { readPaymentSelection } from '../checkout/selection'
 import { useBoat } from '../hooks'
 import styles from './pages.module.css'
 
@@ -21,13 +22,12 @@ export default function PaymentPage() {
     return () => clearInterval(id)
   }, [])
 
-  const start = fromISO(params.get('start'))
-  const end = fromISO(params.get('end'))
-  const pax = Number(params.get('pax')) || 1
+  const selection = readPaymentSelection(params, boat?.passengers)
 
   if (isPending) return <p className={styles.state}>Cargando…</p>
-  if (!boat || !start || !end) return <p className={styles.state}>La reserva no es válida. Vuelve a elegir tus fechas.</p>
+  if (!boat || !selection) return <p className={styles.state}>La reserva no es válida. Vuelve a elegir tus fechas.</p>
 
+  const { start, end, pax } = selection
   const nights = Math.max(nightsBetween(start, end), 1)
   const p = priceBreakdown(boat.pricePerDay, nights)
   const expired = left === 0
@@ -86,7 +86,11 @@ export default function PaymentPage() {
               {lines.map(([label, v]) => <div key={label} className={styles.line}><span>{label}</span><span>{money(v)}</span></div>)}
             </div>
           </section>
-          <Button block disabled={!accepted || expired} onClick={() => navigate('/mis-reservas')}>Confirmar y Pagar</Button>
+          <Button block disabled={!accepted || expired} onClick={() => navigate(
+            `/explorar/${boatId}/pago/metodo?${params}`, {
+              state: { paymentReview: { boatId, search: params.toString(), accepted: true } },
+            },
+          )}>Confirmar y Pagar</Button>
           {!accepted && <p className={styles.payNote}>Se requiere tu consentimiento para completar el pago.</p>}
         </aside>
       </div>

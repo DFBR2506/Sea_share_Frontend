@@ -4,7 +4,6 @@ import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
 import { formatFull, formatRange, nightsBetween, toISO } from '@/lib/dates'
-import { ConfirmBookingModal } from '../components/ConfirmBookingModal'
 import { useBoat } from '../hooks'
 import styles from './pages.module.css'
 
@@ -14,7 +13,6 @@ export default function BoatDetailPage() {
   const { data: boat, isPending } = useBoat(boatId)
   const [range, setRange] = useState({ start: null, end: null })
   const [pax, setPax] = useState(1)
-  const [confirming, setConfirming] = useState(false)
 
   if (isPending) return <p className={styles.state}>Cargando…</p>
   if (!boat) return <p className={styles.state}>No encontramos esta embarcación.</p>
@@ -23,9 +21,9 @@ export default function BoatDetailPage() {
   const base = nights * boat.pricePerDay
   const rangeLabel = nights ? formatRange(range.start, range.end) : ''
 
-  const goToPayment = (contact) => {
+  const goToPayment = () => {
     const q = new URLSearchParams({ start: toISO(range.start), end: toISO(range.end), pax: String(pax) })
-    navigate(`/explorar/${boat.id}/pago?${q}`, { state: { contact } })
+    navigate(`/explorar/${boat.id}/pago?${q}`)
   }
 
   return (
@@ -78,23 +76,11 @@ export default function BoatDetailPage() {
             {nights > 0 && (
               <div className={styles.totalRow}><span>{nights} noches × ${boat.pricePerDay}</span><strong>${base}</strong></div>
             )}
-            <Button block disabled={!nights} onClick={() => setConfirming(true)}>Reservar</Button>
+            <Button block disabled={!nights} onClick={goToPayment}>Reservar</Button>
           </div>
         </div>
       </div>
 
-      {nights > 0 && (
-        <ConfirmBookingModal
-          open={confirming}
-          onClose={() => setConfirming(false)}
-          onContinue={goToPayment}
-          boat={boat}
-          rangeLabel={rangeLabel}
-          nights={nights}
-          pax={pax}
-          base={base}
-        />
-      )}
     </>
   )
 }
