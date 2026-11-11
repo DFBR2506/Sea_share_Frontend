@@ -32,6 +32,8 @@ npm run dev        # http://localhost:5173
 | `npm run build` | Build de producción en `dist/` |
 | `npm run preview` | Sirve el build localmente |
 | `npm run lint` | Oxlint |
+| `npm test` | Pruebas unitarias de checkout y pagos (Node, sin SDK real) |
+| `npm run test:e2e` | Pruebas Chromium de escritorio y móvil con doble de SDK |
 
 Si el puerto está ocupado: `npm run dev -- --port 5199`.
 
@@ -96,7 +98,58 @@ Se valida el vencimiento antes de normalizar, antes del adaptador y después de 
 
 **Conexión futura (fuera de esta entrega):** reemplazar el adaptador local por un transporte HTTP solo cuando exista el endpoint acordado con Reservas/intermediario. Conservar el contrato normalizado y la cancelación mediante `AbortSignal`; adaptar explícitamente la respuesta y los estados de confirmación financiera. El flujo actual rechaza respuestas `APPROVED` o `paymentCreated: true` para no confundirlas con tokenización. No basta con cambiar una URL: siguen pendientes el contrato de entrada, el UUID real de reserva y el soporte de emisor/identificación en M3. Un timeout futuro deberá tratarse como resultado desconocido, no como permiso para duplicar un cobro.
 
-Pruebas locales sin SDK real: `node --test tests/*.test.js`. Estas pruebas no acreditan tokenización real; la comprobación manual anterior necesita la Public Key y conexión a MercadoPago.
+#### Verificación reproducible (fase 6)
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+npm run test:e2e
+npm run lint
+npm run build
+```
+
+`playwright.config.js` inicia un Vite aislado en `127.0.0.1:5197` con una Public Key ficticia que sobrescribe `.env`/`.env.local`. Si el puerto está ocupado falla: no reutiliza una instancia con credenciales desconocidas. Las pruebas no leen ni imprimen credenciales privadas.
+
+El navegador intercepta el script oficial con `tests/e2e/sdkStub.js`; el CSS de Google Fonts preexistente en `index.html` también se intercepta localmente. Cualquier intento de acceder al backend o a otro recurso externo hace fallar la prueba. No se llama a MercadoPago en E2E: **los tokens de esas pruebas son sintéticos**.
+
+| Comprobación | Evidencia automática |
+|---|---|
+| Datos requeridos, mapeo a M3 y exclusión de PAN/CVV/BIN | `tests/paymentContract.test.js`, `tests/paymentBrick.test.js` |
+| Selección válida, fechas y capacidad conocida | `tests/selection.test.js` |
+| TTL absoluto, recarga y cambios de selección | `tests/checkoutState.test.js` y `tests/e2e/checkout.spec.js` |
+| Carga única, cancelación y limpieza con StrictMode | `tests/mercadoPagoSdk.test.js`, `tests/paymentBrick.test.js` |
+| Doble envío, fallo, reintento y resultado tardío | `tests/paymentFlow.test.js` |
+| Navegación sin diálogo, acceso directo, atrás/adelante | `tests/e2e/checkout.spec.js` |
+| Configuración ausente, descarga fallida y storage bloqueado | `tests/e2e/checkout.spec.js` |
+| Sin llamadas backend ni datos sensibles en storage/consola | Fixture de red y aserciones de privacidad en E2E |
+| Tokens visuales, padding de 12 px y ausencia de overflow | Caso visual E2E en escritorio y móvil |
+
+**Resultado ejecutado en esta etapa:** 44 pruebas unitarias y 26 pruebas de navegador correctas (13 casos por proyecto). Lint sin errores, con la advertencia preexistente de Fast Refresh en `AnimatedStepper.jsx`; build correcto, con advertencia de tamaño del bundle. Se fortaleció la validación de selección para rechazar una capacidad de pasajeros ausente o inválida.
+
+Las capturas locales `contacto.png` y `layout-doble-sdk.png` quedan en las carpetas del caso visual bajo `test-results/`, excluido de Git. Contienen únicamente datos sintéticos y se revisaron en escritorio y móvil. **La captura del doble verifica el contenedor y la configuración visual, no los campos PCI reales.** No se generan trazas, vídeos ni HAR por defecto; no adjuntar evidencia de sesiones reales sin sanearla.
+
+##### Aceptación pendiente con SDK real (Colombia)
+
+La visualización del Brick fue reportada por el usuario. La generación real de un token mediante `onSubmit` y la apariencia de los campos seguros **no se dan por verificadas por las pruebas anteriores**. Para cerrar ese requisito, ejecutar los pasos de tokenización de esta sección con datos oficiales de prueba y registrar únicamente:
+
+- [ ] SDK real cargado con Public Key de pruebas MCO, sin doble de SDK.
+- [ ] `tokenPresent: true`, `emailPresent: true`, `installments: 1` y `paymentMethodId` presente.
+- [ ] Registrar los booleanos de presencia de emisor, identificación y últimos cuatro dígitos; no asumir que siempre se reciben. Si falta uno requerido por el contrato acordado, registrar el bloqueo.
+- [ ] `contactNamePresent`, `contactPhonePresent` y `m3PaymentFieldsPresent` en `true`.
+- [ ] `mode: detached`, `outcome: tokenized`, `paymentCreated: false`.
+- [ ] Network: peticiones de tokenización permitidas; ningún POST de creación de pagos/preferencias ni llamadas a M2/M3. No exportar HAR con datos de tarjeta/documento.
+- [ ] Captura y datos de contacto ausentes de storage/consola; limpieza al editar, salir y expirar.
+- [ ] Revisar campos seguros en móvil/escritorio, márgenes, foco y errores. La herencia tipográfica del iframe sigue limitada por el SDK.
+
+Guardar fecha, navegador y booleanos anteriores, sin token, correo, teléfono, documento ni credenciales. **No marcar la tokenización real como completada solo porque el formulario sea visible.**
+
+##### Límites que siguen abiertos
+
+- Precio, disponibilidad, identidad de reserva y vencimiento son simulaciones locales. Si el navegador bloquea storage, no se conserva el checkout tras recargar.
+- M3 aún no tiene un endpoint HTTP de cobro para este flujo ni transmite emisor/identificación. Contacto y UUID real dependen del contrato de Reservas.
+- PSE, efectivo, billetera, confirmación financiera, 3DS y requisitos fiscales/productivos no se validan en esta entrega.
+- Las pruebas móviles usan emulación de Chromium, no un dispositivo físico ni Safari/WebKit.
 
 ## Cómo probarlo
 
