@@ -5,6 +5,7 @@ import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
 import { formatFull, formatRange, nightsBetween, toISO } from '@/lib/dates'
 import { useBoat } from '../hooks'
+import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
 
 export default function BoatDetailPage() {
@@ -22,6 +23,7 @@ export default function BoatDetailPage() {
   const rangeLabel = nights ? formatRange(range.start, range.end) : ''
 
   const goToPayment = () => {
+    try { clearExpiredCheckout(window.sessionStorage) } catch { /* Storage bloqueado. */ }
     const q = new URLSearchParams({ start: toISO(range.start), end: toISO(range.end), pax: String(pax) })
     navigate(`/explorar/${boat.id}/pago?${q}`)
   }

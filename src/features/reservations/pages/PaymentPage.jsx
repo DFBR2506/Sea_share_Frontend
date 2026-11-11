@@ -1,37 +1,17 @@
-import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
 import { formatRange, money, nightsBetween } from '@/lib/dates'
-import { priceBreakdown } from '../api'
-import { readPaymentSelection } from '../checkout/selection'
-import { useBoat } from '../hooks'
+import { useCheckout } from '../checkout/checkoutContext'
+import CheckoutTimer from '../checkout/CheckoutTimer'
 import styles from './pages.module.css'
-
-const WINDOW_SECONDS = 15 * 60
 
 export default function PaymentPage() {
   const { boatId } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { data: boat, isPending } = useBoat(boatId)
-  const [accepted, setAccepted] = useState(false)
-  const [left, setLeft] = useState(WINDOW_SECONDS)
-
-  useEffect(() => {
-    const id = setInterval(() => setLeft((s) => Math.max(s - 1, 0)), 1000)
-    return () => clearInterval(id)
-  }, [])
-
-  const selection = readPaymentSelection(params, boat?.passengers)
-
-  if (isPending) return <p className={styles.state}>Cargando…</p>
-  if (!boat || !selection) return <p className={styles.state}>La reserva no es válida. Vuelve a elegir tus fechas.</p>
-
+  const { boat, selection, price: p, accepted, setAccepted, expired, canContinue } = useCheckout()
   const { start, end, pax } = selection
   const nights = Math.max(nightsBetween(start, end), 1)
-  const p = priceBreakdown(boat.pricePerDay, nights)
-  const expired = left === 0
-  const clock = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`
   const lines = [
     ['Tarifa base', p.base],
     ['Comisión', p.commission],
@@ -42,10 +22,7 @@ export default function PaymentPage() {
   return (
     <>
       <h1 className={styles.title}>Pago</h1>
-      <div className={`${styles.timer} ${expired ? styles.expired : ''}`} role="timer">
-        ⏳ {expired ? 'LA RESERVA EXPIRÓ' : `RESERVA EXPIRA EN: ${clock}`}
-      </div>
-      <p className={styles.muted}>Precio y disponibilidad bloqueados</p>
+      <CheckoutTimer />
 
       <div className={styles.pay} style={{ marginTop: 16 }}>
         <div>
@@ -73,7 +50,7 @@ export default function PaymentPage() {
           </section>
 
           <label className={`${styles.panel} ${styles.consent}`}>
-            <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
+            <input type="checkbox" checked={accepted} disabled={expired} onChange={(e) => setAccepted(e.target.checked)} />
             <span>Acepto la Política de Cancelación<small>Cancelación gratis hasta 72h antes del inicio del viaje.</small></span>
           </label>
         </div>
@@ -86,11 +63,10 @@ export default function PaymentPage() {
               {lines.map(([label, v]) => <div key={label} className={styles.line}><span>{label}</span><span>{money(v)}</span></div>)}
             </div>
           </section>
-          <Button block disabled={!accepted || expired} onClick={() => navigate(
-            `/explorar/${boatId}/pago/metodo?${params}`, {
-              state: { paymentReview: { boatId, search: params.toString(), accepted: true } },
-            },
-          )}>Confirmar y Pagar</Button>
+          <Button block disabled={!accepted || expired} onClick={() => {
+            if (canContinue()) navigate(`/explorar/${boatId}/pago/metodo?${params}`)
+          }}>Confirmar y Pagar</Button>
+          {expired && <Button block onClick={() => navigate(`/explorar/${boatId}`)} style={{marginTop: "0.5lh"}}>Volver a la embarcación</Button>}
           {!accepted && <p className={styles.payNote}>Se requiere tu consentimiento para completar el pago.</p>}
         </aside>
       </div>
