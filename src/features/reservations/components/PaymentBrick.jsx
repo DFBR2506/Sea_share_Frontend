@@ -3,40 +3,14 @@ import { Button } from '@/components/ui'
 import { useCheckout } from '../checkout/checkoutContext'
 import { loadMercadoPagoSdk } from '../checkout/mercadoPagoSdk'
 import { mountPaymentBrick } from '../checkout/paymentBrickLifecycle'
-import { paymentBrickSettings, tokenizationEvidence, validateTokenizedCard } from '../checkout/paymentBrickSettings'
+import { paymentBrickSettings, tokenizationEvidence } from '../checkout/paymentBrickSettings'
+import { normalizePayment, toM3PaymentFields } from '../checkout/paymentContract'
+import { brickVariables } from '../checkout/brickAppearance'
 import styles from '../pages/pages.module.css'
 
-// Resolver los colores en el documento anfitrión; los campos seguros no heredan
-// necesariamente sus variables CSS. No se modifica el DOM interno del Brick.
-function brickVariables() {
-  const probe = document.createElement('span')
-  probe.hidden = true
-  document.body.appendChild(probe)
-  const color = (token) => {
-    probe.style.color = `var(${token})`
-    return getComputedStyle(probe).color
-  }
-  try {
-    const tokens = getComputedStyle(document.documentElement)
-    return {
-      baseColor: color('--seashare-color-brand-primary'),
-      textPrimaryColor: color('--seashare-color-text-primary'),
-      textSecondaryColor: color('--seashare-color-text-secondary'),
-      formBackgroundColor: color('--seashare-color-surface'),
-      inputBackgroundColor: color('--seashare-color-surface'),
-      outlinePrimaryColor: color('--seashare-color-border-default'),
-      errorColor: color('--seashare-color-brand-accent'),
-      successColor: color('--seashare-color-success-text'),
-      borderRadiusMedium: tokens.getPropertyValue('--radius-md').trim(),
-    }
-  } finally {
-    probe.remove()
-  }
-}
-
-function BrickInstance({ publicKey }) {
+function BrickInstance({ publicKey, contact }) {
   const target = `payment-brick-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const { price, expiresAt } = useCheckout()
+  const { price, expiresAt, checkoutId } = useCheckout()
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
   const [evidence, setEvidence] = useState(null)
@@ -61,17 +35,18 @@ function BrickInstance({ publicKey }) {
           throw new Error('La ventana del checkout terminó.')
         }
         try {
-          validateTokenizedCard(result, price.total)
           // Solo memoria del componente. No logs, storage, caché ni envíos HTTP.
-          captured.current = {
-            selectedPaymentMethod: result.selectedPaymentMethod,
-            formData: result.formData,
-            additionalData: {
-              lastFourDigits: additionalData?.lastFourDigits,
-              cardholderName: additionalData?.cardholderName,
-            },
-          }
-          setEvidence(tokenizationEvidence(result, additionalData))
+          const payment = normalizePayment({
+            checkoutId, contact, result, additionalData, amount: price.total, expiresAt,
+          })
+          captured.current = payment
+          const m3Fields = toM3PaymentFields(payment)
+          setEvidence({
+            ...tokenizationEvidence(payment, payment.additionalData),
+            contactNamePresent: Boolean(payment.contact.name),
+            contactPhonePresent: Boolean(payment.contact.phone),
+            m3PaymentFieldsPresent: Boolean(m3Fields.payment_token_ref && m3Fields.payment_metadata.payer_email),
+          })
           setStatus('tokenized')
         } catch {
           fail('No se obtuvieron los datos de pago esperados. Revisa los campos e inténtalo de nuevo.')
@@ -96,7 +71,7 @@ function BrickInstance({ publicKey }) {
       // Capturar errores de limpieza sin registrar datos del SDK.
       session?.dispose().catch(() => {})
     }
-  }, [publicKey, target, price.total, expiresAt])
+  }, [publicKey, target, price.total, expiresAt, checkoutId, contact])
 
   return (
     <>
@@ -117,7 +92,7 @@ function BrickInstance({ publicKey }) {
   )
 }
 
-export default function PaymentBrick() {
+export default function PaymentBrick({ contact }) {
   const { expired, checkoutId } = useCheckout()
   const [attempt, setAttempt] = useState(0)
   const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY?.trim()
@@ -127,7 +102,7 @@ export default function PaymentBrick() {
 
   return (
     <>
-      <BrickInstance key={`${checkoutId}-${attempt}`} publicKey={publicKey} />
+      <BrickInstance key={`${checkoutId}-${attempt}`} publicKey={publicKey} contact={contact} />
       <Button variant="secondary" onClick={() => setAttempt((current) => current + 1)}>Volver a cargar formulario</Button>
       <p className={styles.payNote}>Volver a cargar borra los datos ingresados y el token de esta prueba; no reinicia el tiempo disponible.</p>
     </>

@@ -8,7 +8,12 @@ export function paymentBrickSettings(amount, callbacks, customVariables = {}) {
       },
       visual: {
         style: { theme: 'default', customVariables },
-        texts: { formSubmit: 'Obtener datos de pago de prueba' },
+        texts: {
+          formTitle: 'Datos del pagador y tarjeta',
+          email: { label: 'Correo del pagador' },
+          cardholderName: { label: 'Nombre del titular de la tarjeta' },
+          formSubmit: 'Obtener datos de pago de prueba',
+        },
       },
     },
     callbacks,

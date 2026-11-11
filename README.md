@@ -50,14 +50,33 @@ VITE_MERCADOPAGO_PUBLIC_KEY=          # Public Key de pruebas de Colombia
 
 1. Configura `VITE_MERCADOPAGO_PUBLIC_KEY` en `.env.local` con la **Public Key de pruebas** de una aplicación de Colombia (MCO), y reinicia Vite. Nunca uses Access Token ni secreto de webhook en `VITE_*`.
 2. Como arrendatario, selecciona embarcación, fechas y pasajeros; pulsa «Reservar», acepta la política y continúa al método de pago.
-3. Completa el Brick con [tarjetas oficiales de prueba de Colombia](https://www.mercadopago.com.co/developers/es/docs/checkout-bricks/integration-test/test-cards) y los datos de prueba indicados por MercadoPago. No uses una tarjeta real.
+3. Completa primero nombre y teléfono del contacto de la reserva con datos de prueba; luego el Brick con [tarjetas oficiales de prueba de Colombia](https://www.mercadopago.com.co/developers/es/docs/checkout-bricks/integration-test/test-cards). El contacto puede ser distinto del titular de la tarjeta. El correo del pagador se solicita solo en el Brick. No uses una tarjeta real.
 4. Pulsa «Obtener datos de pago de prueba». El callback debe mostrar `tokenPresent: true`, `emailPresent: true`, el método y `installments: 1`. La evidencia no muestra el token, correo ni documento.
 5. Comprueba en Network que hay peticiones del SDK a MercadoPago para tokenizar, pero **ningún POST de creación de pagos o preferencias ni llamadas a M2/M3**. El backend puede permanecer apagado.
 6. Vuelve al resumen y recarga: se conservan consentimiento y vencimiento, pero no el token. Al vencer se desmonta el Brick. «Volver a cargar formulario» limpia sus datos sin renovar el TTL.
 
 Se usa el SDK oficial `https://sdk.mercadopago.com/js/v2`, sin wrapper React, preferencias ni billetera/PSE/efectivo. Solo tarjetas y una cuota. El importe sigue siendo el del mock; no se presenta como una cotización real en COP. Un importe inferior al mínimo habilitado por MercadoPago puede impedir mostrar cuotas: la prueba debe usar una selección compatible, sin alterar silenciosamente el total.
 
-La captura queda únicamente en memoria del componente y se borra al salir, reintentar o expirar. No se crean pagos: `tokenized` **no** significa `APPROVED`. La captura de contacto y el contrato normalizado pertenecen a la fase 4; el adaptador de envío desacoplado, a la fase 5.
+La captura queda únicamente en memoria del componente y se borra al salir, reintentar, editar el contacto o expirar. El contacto tampoco se persiste al volver o recargar. No se crean pagos: `tokenized` **no** significa `APPROVED`. El adaptador de envío desacoplado pertenece a la fase 5.
+
+#### Contrato local de pago (fase 4)
+
+`features/reservations/checkout/paymentContract.js` normaliza una lista explícita de campos:
+
+- `checkoutId`, `reservationId: null` (todavía no hay reserva real).
+- `contact: { name, phone }`, separado de la identidad del pagador/titular.
+- `selectedPaymentMethod` y `formData`: `token`, `payment_method_id`, `transaction_amount`, `installments`, `payer.email`; cuando estén presentes, `issuer_id`, `payer.identification`, `payment_method_option_id` y `processing_mode`.
+- `additionalData`: únicamente `lastFourDigits` y `cardholderName` si fueron devueltos. No se conserva BIN, PAN, CVV ni vencimiento.
+
+`toM3PaymentFields` es una proyección local de `payment_token_ref`, `payment_method_type` (marca real) y `payment_metadata: { payer_email, last_four? }`. No publica mensajes ni crea un evento completo. M3 aún no transporta `issuer_id`/identificación y no tiene un endpoint HTTP de cobro acreditado para el frontend. No se transmite el nombre/teléfono a M3: sigue pendiente el contrato de Reservas.
+
+La comprobación sanitizada incluye presencia de contacto y de los campos mínimos de M3, nunca sus valores sensibles. Editar el contacto desmonta el Brick y exige capturar de nuevo el token, sin renovar el TTL.
+
+#### Apariencia del Brick
+
+`checkout/brickAppearance.js` deriva colores, variantes de marca, radios, tamaños de texto y espaciados de `src/styles/tokens.css`. Convierte colores calculados (`color-mix`) a valores sRGB antes de entregarlos al SDK. Los campos de contacto usan `Input`/`Button` y las columnas/paneles existentes; no se añaden colores globales ni selectores del DOM interno del SDK.
+
+La interfaz anfitriona conserva Inter. Los campos PCI aislados mantienen las limitaciones tipográficas del SDK: no se presupone que hereden la fuente del documento ni se inyectan reglas dentro de sus iframes. Revisar visualmente el Brick real en móvil y escritorio, incluidos errores y foco, sigue siendo necesario.
 
 Pruebas locales sin SDK real: `node --test tests/*.test.js`. Estas pruebas no acreditan tokenización real; la comprobación manual anterior necesita la Public Key y conexión a MercadoPago.
 
