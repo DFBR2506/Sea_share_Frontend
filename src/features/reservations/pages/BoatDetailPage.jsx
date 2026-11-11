@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
-import { formatFull, formatRange, nightsBetween, toISO } from '@/lib/dates'
+import { formatFull, formatRange, money, toISO } from '@/lib/dates'
+import { priceBreakdown } from '../api'
 import { useBoat } from '../hooks'
 import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
@@ -18,9 +19,9 @@ export default function BoatDetailPage() {
   if (isPending) return <p className={styles.state}>Cargando…</p>
   if (!boat) return <p className={styles.state}>No encontramos esta embarcación.</p>
 
-  const nights = range.start && range.end ? Math.max(nightsBetween(range.start, range.end), 1) : 0
-  const base = nights * boat.pricePerDay
-  const rangeLabel = nights ? formatRange(range.start, range.end) : ''
+  const price = range.start && range.end ? priceBreakdown(boat.pricePerDay, range.start, range.end, pax) : null
+  const days = price?.days ?? 0
+  const rangeLabel = days ? formatRange(range.start, range.end) : ''
 
   const goToPayment = () => {
     try { clearExpiredCheckout(window.sessionStorage) } catch { /* Storage bloqueado. */ }
@@ -64,8 +65,8 @@ export default function BoatDetailPage() {
 
           <div className={styles.booking}>
             <div className={styles.bookingHead}>
-              <div className={styles.price}>${boat.pricePerDay} <small>/ día</small></div>
-              {nights > 0 && <span className={styles.chip}>{rangeLabel}</span>}
+              <div className={styles.price}>{money(boat.pricePerDay)} <small>/ día</small></div>
+              {days > 0 && <span className={styles.chip}>{rangeLabel}</span>}
             </div>
             <div className={styles.paxRow}>
               <div><strong>Pasajeros</strong><span className={styles.muted}>Máx. {boat.passengers} personas</span></div>
@@ -75,10 +76,10 @@ export default function BoatDetailPage() {
                 <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax(pax + 1)}>+</button>
               </div>
             </div>
-            {nights > 0 && (
-              <div className={styles.totalRow}><span>{nights} noches × ${boat.pricePerDay}</span><strong>${base}</strong></div>
+            {days > 0 && (
+              <div className={styles.totalRow}><span>Alquiler: {days} {days === 1 ? 'día' : 'días'} × {money(boat.pricePerDay)}</span><strong>{money(price.base)}</strong></div>
             )}
-            <Button block disabled={!nights} onClick={goToPayment}>Reservar</Button>
+            <Button block disabled={!days} onClick={goToPayment}>Reservar</Button>
           </div>
         </div>
       </div>

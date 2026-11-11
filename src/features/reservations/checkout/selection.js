@@ -12,7 +12,7 @@ export function readPaymentSelection(params, maxPassengers) {
     && date && Number.isFinite(date.getTime()) && toISO(date) === value
 
   if (!Number.isInteger(maxPassengers) || maxPassengers < 1
-    || !validDate(startValue, start) || !validDate(endValue, end) || end <= start
+    || !validDate(startValue, start) || !validDate(endValue, end) || end < start
     || !Number.isInteger(pax) || pax < 1 || pax > maxPassengers) return null
 
   return { start, end, pax }

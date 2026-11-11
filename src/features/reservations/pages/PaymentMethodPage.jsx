@@ -1,6 +1,6 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { formatRange, money, nightsBetween } from '@/lib/dates'
+import { formatRange, money } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import PaymentDetails from '../components/PaymentDetails'
@@ -16,7 +16,7 @@ export default function PaymentMethodPage() {
   if (!accepted) return <Navigate to={summaryUrl} replace />
 
   const { start, end, pax } = selection
-  const nights = nightsBetween(start, end)
+  const days = price.days
 
   return (
     <>
@@ -40,7 +40,7 @@ export default function PaymentMethodPage() {
             <div className={styles.boatRow}>
               <div>
                 <h3>{boat.name}</h3>
-                <p>{formatRange(start, end)} · {nights} noches · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>
+                <p>{formatRange(start, end)} · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>
               </div>
             </div>
             <span className={styles.muted}>Total a pagar</span>

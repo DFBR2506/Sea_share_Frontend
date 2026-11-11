@@ -19,7 +19,6 @@ test('rechaza fechas inexistentes, formatos inválidos, rangos invertidos y camp
     '', 'start=invalid&end=2026-11-22&pax=2',
     'start=2026-02-30&end=2026-03-03&pax=2',
     'start=2026-11-22&end=2026-11-20&pax=2',
-    'start=2026-11-20&end=2026-11-20&pax=2',
     'start=2026-1-20&end=2026-11-22&pax=2',
     'start=2026-11-20&end=2026-11-22',
   ]) assert.equal(readPaymentSelection(query(value), 6), null, value)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useParams, useSearchParams } from 'react-router-dom'
-import { nightsBetween, toISO } from '@/lib/dates'
+import { toISO } from '@/lib/dates'
 import { priceBreakdown } from '../api'
 import { useBoat } from '../hooks'
 import { CheckoutContext } from './checkoutContext'
@@ -71,7 +71,7 @@ export default function CheckoutLayout() {
     start: toISO(selection.start),
     end: toISO(selection.end),
     pax: selection.pax,
-    price: priceBreakdown(boat.pricePerDay, nightsBetween(selection.start, selection.end)),
+    price: priceBreakdown(boat.pricePerDay, selection.start, selection.end, selection.pax),
   }
 
   // Un cambio en la selección o cotización invalida el consentimiento anterior.

@@ -1,6 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { formatRange, money, nightsBetween } from '@/lib/dates'
+import { formatRange, money } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import styles from './pages.module.css'
@@ -11,10 +11,9 @@ export default function PaymentPage() {
   const navigate = useNavigate()
   const { boat, selection, price: p, accepted, setAccepted, expired, canContinue } = useCheckout()
   const { start, end, pax } = selection
-  const nights = Math.max(nightsBetween(start, end), 1)
+  const days = p.days
   const lines = [
     ['Tarifa base', p.base],
-    ['Comisión', p.commission],
     ['Seguro', p.insurance],
     ['Depósito', p.deposit],
   ]
@@ -31,7 +30,7 @@ export default function PaymentPage() {
               <div className={styles.thumb} />
               <div>
                 <h3>{boat.name}</h3>
-                <p>{formatRange(start, end)} · {nights} noches · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>
+                <p>{formatRange(start, end)} · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>
                 <p>{boat.captain ? 'Viaje con capitán' : 'Sin capitán'} · {boat.shortLocation}</p>
               </div>
             </div>
@@ -40,10 +39,9 @@ export default function PaymentPage() {
           <section className={styles.panel}>
             <h2>Detalle del precio</h2>
             <div className={styles.lines}>
-              <div className={styles.line}><span>Tarifa base ({nights} días × ${boat.pricePerDay})</span><span>{money(p.base)}</span></div>
-              <div className={styles.line}><span>Comisión de la plataforma</span><span>{money(p.commission)}</span></div>
-              <div className={styles.line}><span>Seguro náutico</span><span>{money(p.insurance)}</span></div>
-              <div className={styles.line}><span>Depósito de garantía (reembolsable)</span><span>{money(p.deposit)}</span></div>
+              <div className={styles.line}><span>Alquiler ({days} {days === 1 ? 'día' : 'días'} × {money(boat.pricePerDay)})</span><span>{money(p.base)}</span></div>
+              <div className={styles.line}><span>Seguro náutico ({pax} × {money(p.insurancePerPassenger)})</span><span>{money(p.insurance)}</span></div>
+              <div className={styles.line}><span>Depósito de garantía (10 % de la tarifa diaria, reembolsable)</span><span>{money(p.deposit)}</span></div>
               <div className={`${styles.line} ${styles.total}`}><span>Total</span><span>{money(p.total)}</span></div>
               <small>El depósito se reembolsa completo si el barco se devuelve sin daños.</small>
             </div>
