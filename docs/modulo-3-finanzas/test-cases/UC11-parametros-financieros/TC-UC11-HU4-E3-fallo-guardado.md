@@ -1,5 +1,5 @@
 ### Test Case Specification: Parámetros financieros · HU4 · E3 Fallo durante el guardado
-**Created** : 2026-11-10  **Spec/Plan Link** : [011-configurar-parametros-financieros-globales/spec.md](../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md)  **Status** : Draft
+**Created** : 2026-11-10  **Spec/Plan Link** : [011-configurar-parametros-financieros-globales/spec.md](../../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md)  **Status** : Draft
 
 #### Test Overview *(mandatory)*
 
@@ -19,11 +19,11 @@ Este caso de prueba verifica que, cuando el guardado falla (validación rechazad
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
 | ------ | ------ | ------ |
-| Feature Spec UC11 | Specification Document | [spec.md](../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md) |
-| Implementation Plan UC11 | Plan Document | [plan.md](../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/plan.md) |
-| Contrato REST — guardar parámetros | REST contract | [UC11-guardar-parametros-financieros.md](../../../../SeaShare_Modulo_3/docs/technical-plan/contracts/rest/UC11-guardar-parametros-financieros.md) |
-| Catálogo de errores y convenciones | Conventions | [contracts/README.md](../../../../SeaShare_Modulo_3/docs/technical-plan/contracts/README.md) |
-| Test case backend equivalente | Test Case | [TC-UC11-HU4-E3-fallo-guardado.md](../../../../SeaShare_Modulo_3/docs/features/qa/test-cases/TC-UC11-HU4-E3-fallo-guardado.md) |
+| Feature Spec UC11 | Specification Document | [spec.md](../../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md) |
+| Implementation Plan UC11 | Plan Document | [plan.md](../../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/plan.md) |
+| Contrato REST — guardar parámetros | REST contract | [UC11-guardar-parametros-financieros.md](../../../../../SeaShare_Modulo_3/docs/technical-plan/contracts/rest/UC11-guardar-parametros-financieros.md) |
+| Catálogo de errores y convenciones | Conventions | [contracts/README.md](../../../../../SeaShare_Modulo_3/docs/technical-plan/contracts/README.md) |
+| Test case backend equivalente | Test Case | [TC-UC11-HU4-E3-fallo-guardado.md](../../../../../SeaShare_Modulo_3/docs/features/qa/test-cases/TC-UC11-HU4-E3-fallo-guardado.md) |
 
 --------------------------------------------------------------------------------
 

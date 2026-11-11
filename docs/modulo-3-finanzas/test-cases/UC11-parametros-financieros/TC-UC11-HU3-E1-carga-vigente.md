@@ -1,5 +1,5 @@
 ### Test Case Specification: Parámetros financieros · HU3 · E1 Carga de la configuración vigente
-**Created** : 2026-11-10  **Spec/Plan Link** : [011-configurar-parametros-financieros-globales/spec.md](../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md)  **Status** : Draft
+**Created** : 2026-11-10  **Spec/Plan Link** : [011-configurar-parametros-financieros-globales/spec.md](../../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md)  **Status** : Draft
 
 #### Test Overview *(mandatory)*
 
@@ -19,10 +19,10 @@ Este caso de prueba verifica que, al abrir `/finadmin/parametros`, la pantalla m
 ##### Document References
 | Reference Name | Type of Reference | Document Location / Link |
 | ------ | ------ | ------ |
-| Feature Spec UC11 | Specification Document | [spec.md](../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md) |
-| Implementation Plan UC11 | Plan Document | [plan.md](../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/plan.md) |
-| Contrato REST — obtener parámetros | REST contract | [UC11-obtener-parametros-financieros.md](../../../../SeaShare_Modulo_3/docs/technical-plan/contracts/rest/UC11-obtener-parametros-financieros.md) |
-| Test case backend equivalente | Test Case | [TC-UC11-HU3-E1-carga-vigente.md](../../../../SeaShare_Modulo_3/docs/features/qa/test-cases/TC-UC11-HU3-E1-carga-vigente.md) |
+| Feature Spec UC11 | Specification Document | [spec.md](../../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/spec.md) |
+| Implementation Plan UC11 | Plan Document | [plan.md](../../../../../SeaShare_Modulo_3/docs/features/011-configurar-parametros-financieros-globales/plan.md) |
+| Contrato REST — obtener parámetros | REST contract | [UC11-obtener-parametros-financieros.md](../../../../../SeaShare_Modulo_3/docs/technical-plan/contracts/rest/UC11-obtener-parametros-financieros.md) |
+| Test case backend equivalente | Test Case | [TC-UC11-HU3-E1-carga-vigente.md](../../../../../SeaShare_Modulo_3/docs/features/qa/test-cases/TC-UC11-HU3-E1-carga-vigente.md) |
 
 --------------------------------------------------------------------------------
 
