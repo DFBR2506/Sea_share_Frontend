@@ -1,5 +1,6 @@
 import { BOATS, RESERVATIONS } from './mocks'
 import { OWNER_RESERVATIONS, SEED_DISPUTES } from './ownerMocks'
+import { mockBreakdown } from './pricing'
 import { inclusiveDays } from '@/lib/dates'
 
 // Capa de acceso a datos del módulo 2. Hoy devuelve mocks; al llegar los contratos
@@ -17,14 +18,8 @@ export const listReservations = () => delay(RESERVATIONS)
 
 export const getReservation = (id) => delay(RESERVATIONS.find((r) => r.id === id) ?? null)
 
-export const priceBreakdown = (dailyRate, start, end, passengers) => {
-  const days = inclusiveDays(start, end)
-  const insurancePerPassenger = 15000
-  const base = dailyRate * days
-  const insurance = insurancePerPassenger * passengers
-  const deposit = dailyRate * 0.1
-  return { days, base, insurance, insurancePerPassenger, deposit, total: base + insurance + deposit }
-}
+// Desglose mock del checkout (COP), con la misma regla que las reservas de ejemplo.
+export const priceBreakdown = (dailyRate, start, end, passengers) => mockBreakdown(dailyRate, inclusiveDays(start, end), passengers)
 
 // ---- Lado Propietario / Administrador (store en memoria) ----
 let ownerReservations = OWNER_RESERVATIONS.map((r) => ({ ...r }))

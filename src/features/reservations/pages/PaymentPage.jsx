@@ -1,6 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { formatRange, money } from '@/lib/dates'
+import { copMoney, formatRange } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import ReservationValuePanel from '../components/ReservationValuePanel'
@@ -40,10 +40,10 @@ export default function PaymentPage() {
           <section className={styles.panel}>
             <h2>Detalle del precio</h2>
             <div className={styles.lines}>
-              <div className={styles.line}><span>Alquiler ({days} {days === 1 ? 'día' : 'días'} × {money(boat.pricePerDay)})</span><span>{money(p.base)}</span></div>
-              <div className={styles.line}><span>Seguro náutico ({pax} × {money(p.insurancePerPassenger)})</span><span>{money(p.insurance)}</span></div>
-              <div className={styles.line}><span>Depósito de garantía (10 % de la tarifa diaria, reembolsable)</span><span>{money(p.deposit)}</span></div>
-              <div className={`${styles.line} ${styles.total}`}><span>Total</span><span>{money(p.total)}</span></div>
+              <div className={styles.line}><span>Alquiler ({days} {days === 1 ? 'día' : 'días'} × {copMoney(boat.pricePerDay)})</span><span>{copMoney(p.base)}</span></div>
+              <div className={styles.line}><span>Seguro náutico ({pax} × {copMoney(p.insurancePerPassenger)})</span><span>{copMoney(p.insurance)}</span></div>
+              <div className={styles.line}><span>Depósito de garantía (10 % de la tarifa diaria, reembolsable)</span><span>{copMoney(p.deposit)}</span></div>
+              <div className={`${styles.line} ${styles.total}`}><span>Total</span><span>{copMoney(p.total)}</span></div>
               <small>El depósito se reembolsa completo si el barco se devuelve sin daños.</small>
             </div>
           </section>
@@ -59,9 +59,9 @@ export default function PaymentPage() {
         <aside className={styles.sidebar}>
           <section className={styles.panel}>
             <span className={styles.muted}>Total a pagar</span>
-            <p className={styles.bigTotal}>{money(p.total)}</p>
+            <p className={styles.bigTotal}>{copMoney(p.total)}</p>
             <div className={styles.lines}>
-              {lines.map(([label, v]) => <div key={label} className={styles.line}><span>{label}</span><span>{money(v)}</span></div>)}
+              {lines.map(([label, v]) => <div key={label} className={styles.line}><span>{label}</span><span>{copMoney(v)}</span></div>)}
             </div>
           </section>
           <Button block disabled={!accepted || expired} onClick={() => {

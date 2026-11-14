@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
-import { copDecimal, formatFull, formatRange, inclusiveDays, money, toISO } from '@/lib/dates'
+import { copDecimal, formatFull, formatRange, copMoney, inclusiveDays, toISO } from '@/lib/dates'
 import { m3ErrorMessage } from '@/features/finance/errors'
 import { useEstimate } from '@/features/finance/hooks'
 import { useBoat } from '../hooks'
@@ -78,7 +78,7 @@ export default function BoatDetailPage() {
 
           <div className={styles.booking}>
             <div className={styles.bookingHead}>
-              <div className={styles.price}>{money(boat.pricePerDay)} <small>/ día</small></div>
+              <div className={styles.price}>{copMoney(boat.pricePerDay)} <small>/ día</small></div>
               {days > 0 && <span className={styles.chip}>{rangeLabel}</span>}
             </div>
             <div className={styles.paxRow}>

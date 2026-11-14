@@ -1,4 +1,9 @@
 // Datos de ejemplo (M2 · Reservas). Se reemplazarán al integrar los contratos reales.
+// Importes en COP: la tarifa diaria coincide con la tarifa base del stub de Flota que usa M3, y
+// los montos de cada reserva se derivan con la regla única de ./pricing (sin cifras sueltas).
+import { copMoney } from '@/lib/dates'
+import { mockBreakdown } from './pricing'
+
 export const BOATS = [
   {
     id: 'sunset-catamaran',
@@ -11,7 +16,7 @@ export const BOATS = [
     cabins: 3,
     lengthFt: 42,
     lengthM: 8,
-    pricePerDay: 250,
+    pricePerDay: 350000,
     amenities: ['Tablas de paddle', 'Equipo de snorkel', 'Nevera', 'Equipo de sonido', 'Wi-Fi', 'Botiquín'],
     host: { name: 'Cap. Marina', badge: 'Superanfitrión · Identidad verificada' },
   },
@@ -26,7 +31,7 @@ export const BOATS = [
     cabins: 2,
     lengthFt: 38,
     lengthM: 12,
-    pricePerDay: 420,
+    pricePerDay: 480000,
     amenities: ['Aire acondicionado', 'Nevera', 'Equipo de sonido', 'Botiquín'],
     host: { name: 'Cap. Rivera', badge: 'Identidad verificada' },
   },
@@ -41,7 +46,7 @@ export const BOATS = [
     cabins: 4,
     lengthFt: 46,
     lengthM: 14,
-    pricePerDay: 310,
+    pricePerDay: 390000,
     amenities: ['Tablas de paddle', 'Equipo de snorkel', 'Wi-Fi', 'Botiquín'],
     host: { name: 'Lagoon Charters', badge: 'Superanfitrión' },
   },
@@ -56,18 +61,33 @@ export const BOATS = [
     cabins: 1,
     lengthFt: 28,
     lengthM: 9,
-    pricePerDay: 180,
+    pricePerDay: 310000,
     amenities: ['Nevera', 'Equipo de snorkel', 'Botiquín'],
     host: { name: 'Cap. Kalua', badge: 'Identidad verificada' },
   },
 ]
 
+const rateOf = (boatId) => BOATS.find((b) => b.id === boatId).pricePerDay
+export const dayLabel = (n) => `${n} ${n === 1 ? 'día' : 'días'}`
+
+// Completa una reserva mock con su desglose y total coherentes (días inclusivos, como M3).
+export function pricedReservation({ days, depositRefunded, ...reservation }) {
+  const breakdown = mockBreakdown(rateOf(reservation.boatId), days, reservation.pax)
+  return {
+    ...reservation,
+    duration: reservation.duration ?? dayLabel(days),
+    total: breakdown.total,
+    breakdown,
+    ...(depositRefunded && { note: `+ ${copMoney(breakdown.deposit)} depósito reembolsado` }),
+  }
+}
+
 export const RESERVATIONS = [
-  { id: 'RS-4492', boatId: 'sunset-catamaran', dates: '25 – 27 sep', duration: '3 noches', total: 1640, status: 'CONFIRMADA', pax: 3, breakdown: { base: 750, commission: 150, insurance: 40, deposit: 200 }, embark: '25 sep, 14:00', disembark: '27 sep, 12:00', guest: 'Laura Gomez' },
-  { id: 'RS-4310', boatId: 'kalua-day-sailer', dates: '28 – 30 ago', duration: '3 días', total: 950, status: 'CONFIRMADA', pax: 2, breakdown: { base: 540, commission: 108, insurance: 40, deposit: 262 }, embark: '28 ago, 09:00', disembark: '30 ago, 18:00', guest: 'Laura Gomez' },
-  { id: 'RS-4188', boatId: 'ocean-whisper', dates: '12 – 14 jul', duration: '2 noches', total: 1260, status: 'CONFIRMADA', note: '+ $200.00 depósito reembolsado', pax: 4, breakdown: { base: 840, commission: 168, insurance: 40, deposit: 212 }, embark: '12 jul, 10:00', disembark: '14 jul, 16:00', guest: 'Laura Gomez' },
-  { id: 'RS-4021', boatId: 'lagoon-46', dates: '3 – 5 jun', duration: 'Cancelada · ventana 72h+', total: 750, status: 'CANCELADA', note: 'Reembolso emitido · Sin cargo · cancelación gratuita', pax: 5, breakdown: { base: 620, commission: 124, insurance: 0, deposit: 6 }, embark: '3 jun, 10:00', disembark: '5 jun, 16:00', guest: 'Laura Gomez' },
-]
+  { id: 'RS-4492', boatId: 'sunset-catamaran', dates: '25 – 27 sep', days: 3, status: 'CONFIRMADA', pax: 3, embark: '25 sep, 14:00', disembark: '27 sep, 12:00', guest: 'Laura Gomez' },
+  { id: 'RS-4310', boatId: 'kalua-day-sailer', dates: '28 – 30 ago', days: 3, status: 'CONFIRMADA', pax: 2, embark: '28 ago, 09:00', disembark: '30 ago, 18:00', guest: 'Laura Gomez' },
+  { id: 'RS-4188', boatId: 'ocean-whisper', dates: '12 – 14 jul', days: 3, status: 'CONFIRMADA', depositRefunded: true, pax: 4, embark: '12 jul, 10:00', disembark: '14 jul, 16:00', guest: 'Laura Gomez' },
+  { id: 'RS-4021', boatId: 'lagoon-46', dates: '3 – 5 jun', days: 3, duration: 'Cancelada · ventana 72h+', status: 'CANCELADA', note: 'Reembolso emitido · Sin cargo · cancelación gratuita', pax: 5, embark: '3 jun, 10:00', disembark: '5 jun, 16:00', guest: 'Laura Gomez' },
+].map(pricedReservation)
 
 export const STATUS_UI = {
   CONFIRMADA: { label: 'Confirmada', tone: 'confirmed' },
