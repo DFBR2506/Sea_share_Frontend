@@ -1,6 +1,6 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { copDecimal, formatRange } from '@/lib/dates'
+import { formatRange, money } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import PaymentDetails from '../components/PaymentDetails'
@@ -47,8 +47,8 @@ export default function PaymentMethodPage() {
                 <p>{formatRange(start, end)} · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>
               </div>
             </div>
-            <span className={styles.muted}>Total estimado</span>
-            <p className={styles.bigTotal}>{copDecimal(price.total)}</p>
+            <span className={styles.muted}>Total a pagar</span>
+            <p className={styles.bigTotal}>{money(price.total)}</p>
             <p className={styles.payNote}>Política de Cancelación aceptada en el resumen.</p>
           </section>
           <Button block onClick={() => navigate(summaryUrl)}>Revisar resumen</Button>

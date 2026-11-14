@@ -5,7 +5,7 @@ export function remainingSeconds(expiresAt, now = Date.now()) {
   return Math.max(0, Math.ceil((expiresAt - now) / 1000))
 }
 
-// El snapshot contiene únicamente barco, fechas, pasajeros y la estimación de M3 (UC02).
+// El snapshot contiene únicamente barco, fechas, pasajeros e importes simulados.
 export function restoreCheckout(raw, snapshot, now = Date.now()) {
   try {
     const saved = JSON.parse(raw)

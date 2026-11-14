@@ -17,7 +17,7 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
   useEffect(() => {
     let session
     const flow = createPaymentFlow({
-      checkoutId, contact, amount: Number(price.total), expiresAt,
+      checkoutId, contact, amount: price.total, expiresAt,
       onChange: (next) => { setView(next); onBusyChange(next.status === 'tokenizing') },
     })
     const callbacks = {
@@ -35,7 +35,7 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
     try {
       session = mountPaymentBrick({
         loadSdk: loadMercadoPagoSdk, publicKey, target,
-        settings: paymentBrickSettings(Number(price.total), callbacks, brickVariables()),
+        settings: paymentBrickSettings(price.total, callbacks, brickVariables()),
       })
       session.ready.catch(() => flow.fail('No se pudo cargar el formulario de MercadoPago. Comprueba la conexión y la Public Key de pruebas.'))
     } catch {
