@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, StatusBadge } from '@/components/ui'
 import { cx } from '@/lib/cx'
-import { money } from '@/lib/dates'
+import { copMoney } from '@/lib/dates'
 import { formatMinSec, useCountdown } from '@/lib/useCountdown'
-import { BREAKDOWN, RESERVATION_STATUS_UI } from '../api/ownerMocks'
+import { RESERVATION_STATUS_UI } from '../api/ownerMocks'
 import { ClaimModal } from '../components/ClaimModal'
 import { HostCancelModal } from '../components/HostCancelModal'
 import { useBoat, useCancelByHost, useEndNavigation, useMarkNoShow, useOwnerReservation, useStartNavigation, useSubmitClaim } from '../hooks'
@@ -213,16 +213,16 @@ export default function OwnerReservationDetailPage() {
           <section className={cx(base.panel, styles.sheet)}>
             <span className={base.muted}>Resumen de pago</span>
             {r.status === 'COMPLETADA' && r.claim ? (
-              <div className={base.lines} style={{ marginTop: 12 }}><div className={base.line}><span>Depósito de garantía</span><span>{money(BREAKDOWN.deposit)}</span></div></div>
+              <div className={base.lines} style={{ marginTop: 12 }}><div className={base.line}><span>Depósito de garantía</span><span>{copMoney(r.breakdown.deposit)}</span></div></div>
             ) : (
               <>
                 <div className={base.lines} style={{ margin: '12px 0' }}>
-                  <div className={base.line}><span>Tarifa base</span><span>{money(BREAKDOWN.base)}</span></div>
-                  <div className={base.line}><span>Comisión</span><span>{money(BREAKDOWN.commission)}</span></div>
-                  <div className={base.line}><span>Seguro</span><span>{money(BREAKDOWN.insurance)}</span></div>
-                  <div className={base.line}><span>Depósito</span><span>{money(BREAKDOWN.deposit)}</span></div>
+                  <div className={base.line}><span>Alquiler ({r.breakdown.days} {r.breakdown.days === 1 ? 'día' : 'días'})</span><span>{copMoney(r.breakdown.base)}</span></div>
+                  <div className={base.line}><span>Comisión de la plataforma (15 %)</span><span>− {copMoney(r.breakdown.commission)}</span></div>
+                  <div className={base.line}><span>Seguro náutico (no se liquida al propietario)</span><span>{copMoney(r.breakdown.insurance)}</span></div>
+                  <div className={base.line}><span>Depósito de garantía (retenido)</span><span>{copMoney(r.breakdown.deposit)}</span></div>
                 </div>
-                <div className={styles.net}><span>Neto a recibir:</span><strong>{money(BREAKDOWN.net)}</strong></div>
+                <div className={styles.net}><span>Neto a recibir:</span><strong>{copMoney(r.breakdown.ownerNet)}</strong></div>
               </>
             )}
           </section>

@@ -3,9 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
-import { formatFull, formatRange, money, toISO } from '@/lib/dates'
-import { priceBreakdown } from '../api'
+import { copDecimal, formatFull, formatRange, copMoney, inclusiveDays, toISO } from '@/lib/dates'
+import { m3ErrorMessage } from '@/features/finance/errors'
+import { useEstimate } from '@/features/finance/hooks'
 import { useBoat } from '../hooks'
+import { boatUuid } from '../api'
 import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
 
@@ -16,11 +18,19 @@ export default function BoatDetailPage() {
   const [range, setRange] = useState({ start: null, end: null })
   const [pax, setPax] = useState(1)
 
+  const days = range.start && range.end ? inclusiveDays(range.start, range.end) : 0
+  // UC02 · estimación real de M3: la clave del query cambia con la selección, así la respuesta
+  // de una selección anterior se descarta y la petición en curso se aborta con su señal.
+  const estimate = useEstimate({
+    boatId: boatUuid(boatId),
+    startDate: days ? toISO(range.start) : '',
+    endDate: days ? toISO(range.end) : '',
+    passengers: pax,
+  })
+
   if (isPending) return <p className={styles.state}>Cargando…</p>
   if (!boat) return <p className={styles.state}>No encontramos esta embarcación.</p>
 
-  const price = range.start && range.end ? priceBreakdown(boat.pricePerDay, range.start, range.end, pax) : null
-  const days = price?.days ?? 0
   const rangeLabel = days ? formatRange(range.start, range.end) : ''
 
   const goToPayment = () => {
@@ -28,6 +38,9 @@ export default function BoatDetailPage() {
     const q = new URLSearchParams({ start: toISO(range.start), end: toISO(range.end), pax: String(pax) })
     navigate(`/explorar/${boat.id}/pago?${q}`)
   }
+
+  // Sin UUID en el stub de Flota la consulta queda desactivada (isPending eterno en v5): no hay estimación.
+  const estimateTotal = !boatUuid(boatId) ? 'No disponible' : estimate.isPending ? 'Calculando…' : estimate.data ? copDecimal(estimate.data.total) : 'No disponible'
 
   return (
     <>
@@ -65,7 +78,7 @@ export default function BoatDetailPage() {
 
           <div className={styles.booking}>
             <div className={styles.bookingHead}>
-              <div className={styles.price}>{money(boat.pricePerDay)} <small>/ día</small></div>
+              <div className={styles.price}>{copMoney(boat.pricePerDay)} <small>/ día</small></div>
               {days > 0 && <span className={styles.chip}>{rangeLabel}</span>}
             </div>
             <div className={styles.paxRow}>
@@ -77,7 +90,18 @@ export default function BoatDetailPage() {
               </div>
             </div>
             {days > 0 && (
-              <div className={styles.totalRow}><span>Alquiler: {days} {days === 1 ? 'día' : 'días'} × {money(boat.pricePerDay)}</span><strong>{money(price.base)}</strong></div>
+              <>
+                <div className={styles.totalRow}>
+                  <span>Total estimado · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</span>
+                  <strong>{estimateTotal}</strong>
+                </div>
+                {estimate.data?.warning && <p className={styles.muted}>{estimate.data.warning}</p>}
+                {estimate.isError && (
+                  <p className={styles.muted} role="alert">
+                    No se pudo estimar el total: {m3ErrorMessage(estimate.error)}
+                  </p>
+                )}
+              </>
             )}
             <Button block disabled={!days} onClick={goToPayment}>Reservar</Button>
           </div>

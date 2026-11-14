@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SlidingTabs, StatusBadge } from '@/components/ui'
-import { money } from '@/lib/dates'
+import { copMoney } from '@/lib/dates'
 import { STATUS_UI } from '../api/mocks'
 import { useBoats, useReservations } from '../hooks'
 import styles from './pages.module.css'
@@ -46,7 +46,7 @@ export default function MyReservationsPage() {
               </div>
               <div className={owner.side}>
                 <button type="button" className={owner.link} onClick={(e) => { e.stopPropagation(); open() }}>Ver detalles ›</button>
-                <span className={owner.amount}>{money(r.total)}</span>
+                <span className={owner.amount}>{copMoney(r.total)}</span>
                 <StatusBadge tone={ui.tone}>{ui.label}</StatusBadge>
               </div>
             </article>

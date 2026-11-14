@@ -28,7 +28,7 @@ export function Pagination({ page, totalPages, onPageChange, siblingCount = 1, t
 
   return (
     <div className={cx(styles.wrap, showSummary && styles.withSummary)}>
-      {showSummary && <span className={styles.summary}>{from}–{to} de {total} {noun} · Página {page} de {Math.max(totalPages, 1)}</span>}
+      {showSummary && <span className={styles.summary}>{total === 0 ? `0 ${noun}` : `${from}–${to} de ${total} ${noun}`} · Página {page} de {Math.max(totalPages, 1)}</span>}
       {totalPages > 1 && <nav className={styles.pagination} aria-label="Paginación">
       <button type="button" className={styles.btn} aria-label="Ir a la página anterior" disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>
       {pageRange(page, totalPages, siblingCount).map((p, i) =>

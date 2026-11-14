@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { contactErrors, normalizePayment, toM3PaymentFields } from '../src/features/reservations/checkout/paymentContract.js'
+import { contactErrors, normalizePayment, sanitizePhone, toM3PaymentFields } from '../src/features/reservations/checkout/paymentContract.js'
 
 const now = 1800000000000
 const input = () => ({
   checkoutId: 'local-checkout', amount: 10000, expiresAt: now + 60000,
-  contact: { name: '  Contacto Reserva  ', phone: ' +57 300 123 4567 ' },
+  contact: { name: '  Contacto Reserva  ', phone: ' 3001234567 ' },
   result: {
     selectedPaymentMethod: 'credit_card',
     formData: {
@@ -23,7 +23,7 @@ test('nombre y teléfono son obligatorios; el contacto no duplica el correo del 
   assert.ok(contactErrors(null).phone)
   assert.deepEqual(contactErrors(input().contact), { name: '', phone: '' })
   const payment = normalizePayment(input(), now)
-  assert.deepEqual(payment.contact, { name: 'Contacto Reserva', phone: '+57 300 123 4567' })
+  assert.deepEqual(payment.contact, { name: 'Contacto Reserva', phone: '3001234567' })
   assert.equal(payment.formData.payer.email, 'payer@example.com')
   assert.equal('email' in payment.contact, false)
   assert.notEqual(payment.contact.name, payment.additionalData.cardholderName)
@@ -98,4 +98,20 @@ test('rechaza contexto vencido, ausente o contacto incompleto sin revelar su con
   ]) {
     assert.throws(() => normalizePayment({ ...input(), ...patch }, now), (error) => !error.message.includes('private-value'))
   }
+})
+
+test('teléfono: solo dígitos, máximo 10 y sin indicativo +57 al pegar', () => {
+  assert.equal(sanitizePhone('300 123 4567'), '3001234567')
+  assert.equal(sanitizePhone('30012345678999'), '3001234567')
+  assert.equal(sanitizePhone('+57 300 123 4567'), '3001234567')
+  assert.equal(sanitizePhone('abc-300'), '300')
+  assert.equal(sanitizePhone(undefined), '')
+})
+
+test('teléfono: exige exactamente 10 dígitos', () => {
+  assert.equal(contactErrors({ name: 'A', phone: '3001234567' }).phone, '')
+  assert.match(contactErrors({ name: 'A', phone: '300123456' }).phone, /10 dígitos/)
+  assert.match(contactErrors({ name: 'A', phone: '30012345678' }).phone, /10 dígitos/)
+  assert.match(contactErrors({ name: 'A', phone: '+57 300 123 4567' }).phone, /10 dígitos/)
+  assert.equal(contactErrors({ name: 'A', phone: '' }).phone, 'Ingresa el teléfono de contacto.')
 })
