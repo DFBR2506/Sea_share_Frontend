@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Button, Input } from '@/components/ui'
+import { ApiError } from '@/lib/http'
+import { m3ErrorMessage } from '../errors'
 import { useParams3, useSaveParams } from '../hooks'
 import styles from '../components/FinanceUI.module.css'
 import local from './params.module.css'
@@ -67,7 +69,7 @@ function ParamsForm({ current, savedVersion, onSaved }) {
         </div>
       </section>
       <div className={local.actions}>
-        {save.isError && !save.error.errors.length && <span role="alert">{save.error.message}</span>}
+        {save.isError && !(save.error instanceof ApiError && save.error.errors.length > 0) && <span role="alert">{m3ErrorMessage(save.error)}</span>}
         {saved && <span className={local.ok} role="status">Versión #{current.version} guardada</span>}
         <Button variant="outline" square onClick={reset}>Cancelar</Button>
         <Button variant="primary" square onClick={submit} disabled={save.isPending}>Guardar cambios</Button>
@@ -81,7 +83,7 @@ export default function FinanceParamsPage() {
   const { data: params, isPending, isError, error } = useParams3()
   const [savedVersion, setSavedVersion] = useState(null)
   if (isPending) return <p className={styles.empty}>Cargando…</p>
-  if (isError) return <p className={styles.empty} role="alert">{error.message}</p>
+  if (isError) return <p className={styles.empty} role="alert">{m3ErrorMessage(error)}</p>
   return (
     <>
       <div className={local.head}>
