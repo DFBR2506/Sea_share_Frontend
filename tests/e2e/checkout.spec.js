@@ -47,7 +47,7 @@ const test = base.extend({
     await runTest(page)
     expect(forbidden, 'Sin intentos de backend ni red externa fuera de SDK/CSS interceptados').toEqual([])
     expect(pageErrors, 'Sin excepciones de navegador').toEqual([])
-    for (const secret of ['e2e-synthetic-token', 'payer-e2e@example.com', '0012345678', 'TEST CONTACT', '+57 300 123 4567']) {
+    for (const secret of ['e2e-synthetic-token', 'payer-e2e@example.com', '0012345678', 'TEST CONTACT', '3001234567']) {
       expect(consoleMessages.some((message) => message.includes(secret)), 'Sin datos sensibles en consola').toBe(false)
     }
   },
@@ -67,7 +67,10 @@ async function completeContact(page) {
   await expect(page.getByText('Ingresa el nombre completo del contacto.')).toBeVisible()
   await expect(page.getByLabel('Nombre completo del contacto *', { exact: true })).toBeFocused()
   await page.getByLabel('Nombre completo del contacto *', { exact: true }).fill('TEST CONTACT')
-  await page.getByLabel('Teléfono de contacto *', { exact: true }).fill('+57 300 123 4567')
+  const phone = page.getByLabel('Teléfono de contacto *', { exact: true })
+  // Pegado con indicativo y espacios: queda el número nacional de 10 dígitos.
+  await phone.fill('+57 300 123 4567')
+  await expect(phone).toHaveValue('3001234567')
   await page.getByRole('button', { name: 'Continuar al formulario seguro' }).click()
 }
 
@@ -118,7 +121,7 @@ test('captura desacoplada, doble callback, privacidad y limpieza al editar', asy
   expect(await page.evaluate(() => window.__mpTest.duplicateShared)).toBe(true)
   const evidence = await page.locator('details').innerText()
   const storage = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))
-  for (const sensitive of ['e2e-synthetic-token', 'payer-e2e@example.com', '0012345678', 'TEST CONTACT', '+57 300 123 4567']) {
+  for (const sensitive of ['e2e-synthetic-token', 'payer-e2e@example.com', '0012345678', 'TEST CONTACT', '3001234567']) {
     expect(evidence).not.toContain(sensitive)
     expect(storage).not.toContain(sensitive)
   }
