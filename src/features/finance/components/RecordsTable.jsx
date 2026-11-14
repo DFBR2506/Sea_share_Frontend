@@ -1,5 +1,5 @@
-import { copPlain } from '@/lib/dates'
-import { TYPE_LABEL } from '../api/mocks'
+import { copDecimal } from '@/lib/dates'
+import { TYPE_LABEL } from '../api'
 import styles from './FinanceUI.module.css'
 
 export function RecordsTable({ rows }) {
@@ -16,7 +16,7 @@ export function RecordsTable({ rows }) {
               <td>{r.reservation}</td>
               <td>{r.ownerId}</td>
               <td>{r.boat}</td>
-              <td className={styles.amount}>{copPlain(r.amount)}</td>
+              <td className={styles.amount}>{copDecimal(r.amount)}</td>
               <td>{r.createdAt}</td>
               <td>{r.externalRef}</td>
             </tr>

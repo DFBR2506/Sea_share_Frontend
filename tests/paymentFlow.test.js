@@ -13,7 +13,7 @@ const result = () => ({
   },
 })
 const options = (overrides = {}) => ({
-  checkoutId: 'local-checkout', contact: { name: 'Private Name', phone: '+57 300 123 4567' },
+  checkoutId: 'local-checkout', contact: { name: 'Private Name', phone: '3001234567' },
   amount: 10000, expiresAt: now + 60000, now: () => now, ...overrides,
 })
 const deferred = () => {
@@ -37,7 +37,7 @@ test('el adaptador confirma captura local, nunca aprobación ni un pago creado',
   assert.equal(flow.snapshot.evidence.mode, 'detached')
   assert.equal(flow.snapshot.evidence.contactPhonePresent, true)
   const serialized = JSON.stringify(flow.snapshot)
-  for (const value of ['sensitive-token', 'private@example.com', '0012345678', 'Private Name', '+57 300 123 4567']) {
+  for (const value of ['sensitive-token', 'private@example.com', '0012345678', 'Private Name', '3001234567']) {
     assert.equal(serialized.includes(value), false)
   }
   flow.dispose()

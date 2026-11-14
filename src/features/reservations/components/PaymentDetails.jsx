@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Button, Input } from '@/components/ui'
 import { useCheckout } from '../checkout/checkoutContext'
-import { contactErrors } from '../checkout/paymentContract'
+import { PHONE_DIGITS, contactErrors, sanitizePhone } from '../checkout/paymentContract'
 import PaymentBrick from './PaymentBrick'
 import styles from '../pages/pages.module.css'
 
@@ -30,8 +30,10 @@ function ContactForm({ initial, onContinue }) {
         <Input label="Nombre completo del contacto *" name="name" autoComplete="name" required
           value={contact.name} onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))}
           error={touched && errors.name} />
-        <Input label="Teléfono de contacto *" name="phone" type="tel" inputMode="tel" autoComplete="tel" required
-          value={contact.phone} onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
+        {/* Sin maxLength: el navegador truncaría un pegado con +57 antes de poder quitar el indicativo. */}
+        <Input label="Teléfono de contacto *" name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" required
+          placeholder={`${PHONE_DIGITS} dígitos, p. ej. 3001234567`}
+          value={contact.phone} onChange={(event) => setContact((current) => ({ ...current, phone: sanitizePhone(event.target.value) }))}
           error={touched && errors.phone} />
       </div>
       <p className={styles.payNote}>El correo del pagador y los datos de tarjeta se completan únicamente en el formulario seguro de MercadoPago.</p>

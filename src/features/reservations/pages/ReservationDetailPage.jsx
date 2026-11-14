@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import boatIcon from '@/assets/icons/boat.svg'
 import { StatGrid } from '@/components/cards'
 import { Button } from '@/components/ui'
-import { money } from '@/lib/dates'
+import { copMoney } from '@/lib/dates'
 import { CancelReservationModal } from '../components/CancelReservationModal'
 import { useBoat, useReservation } from '../hooks'
 import styles from './pages.module.css'
@@ -61,12 +61,11 @@ export default function ReservationDetailPage() {
           <section className={`${styles.panel} ${styles.paySummary} ${owner.sheet}`}>
             <span className={styles.muted}>Resumen de pago</span>
             <div className={styles.lines} style={{ margin: '12px 0' }}>
-              <div className={styles.line}><span>Tarifa base</span><span>{money(b.base)}</span></div>
-              <div className={styles.line}><span>Comisión</span><span>{money(b.commission)}</span></div>
-              <div className={styles.line}><span>Seguro</span><span>{money(b.insurance)}</span></div>
-              <div className={styles.line}><span>Depósito</span><span>{money(b.deposit)}</span></div>
+              <div className={styles.line}><span>Alquiler ({b.days} {b.days === 1 ? 'día' : 'días'})</span><span>{copMoney(b.base)}</span></div>
+              <div className={styles.line}><span>Seguro náutico ({res.pax} × {copMoney(b.insurancePerPassenger)})</span><span>{copMoney(b.insurance)}</span></div>
+              <div className={styles.line}><span>Depósito de garantía</span><span>{copMoney(b.deposit)}</span></div>
             </div>
-            <div className={styles.paid}><span>Total pagado:</span><strong>{money(res.total)}</strong></div>
+            <div className={styles.paid}><span>Total pagado:</span><strong>{copMoney(res.total)}</strong></div>
           </section>
           {!cancelled && (
             <Button variant="outlineDanger" block onClick={() => setCancelling(true)}>✕ Cancelar reserva</Button>

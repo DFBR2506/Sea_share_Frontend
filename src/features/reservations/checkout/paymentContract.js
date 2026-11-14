@@ -1,9 +1,26 @@
 import { validateTokenizedCard } from './paymentBrickSettings.js'
 
+// Teléfono colombiano: 10 dígitos (celular 3XX o fijo 60X), sin indicativo de país.
+export const PHONE_DIGITS = 10
+const PHONE_RE = /^\d{10}$/
+
+/** Deja solo dígitos y como máximo 10. Si se pega con el indicativo +57, lo quita. */
+export function sanitizePhone(value) {
+  let digits = String(value ?? '').replace(/\D/g, '')
+  if (digits.length > PHONE_DIGITS && digits.startsWith('57')) digits = digits.slice(2)
+  return digits.slice(0, PHONE_DIGITS)
+}
+
+function phoneError(phone) {
+  if (typeof phone !== 'string' || !phone.trim()) return 'Ingresa el teléfono de contacto.'
+  if (!PHONE_RE.test(phone.trim())) return `El teléfono debe tener exactamente ${PHONE_DIGITS} dígitos.`
+  return ''
+}
+
 export function contactErrors(contact) {
   return {
     name: typeof contact?.name !== 'string' || !contact.name.trim() ? 'Ingresa el nombre completo del contacto.' : '',
-    phone: typeof contact?.phone !== 'string' || !contact.phone.trim() ? 'Ingresa el teléfono de contacto.' : '',
+    phone: phoneError(contact?.phone),
   }
 }
 
