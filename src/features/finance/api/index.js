@@ -1,5 +1,6 @@
 import { request, requestFile, ApiError } from '@/lib/http'
 import { formatDateTime } from '@/lib/dates'
+import { toReadableReportCsv } from '../reportCsv'
 import { requireOwnerId } from './config'
 
 // Capa de acceso a datos de M3 (finanzas): estimaciones (UC01/UC02), parámetros (UC11),
@@ -137,11 +138,14 @@ export const getReport = async ({ scope, periodicity, period }) => {
 }
 
 // UC13 · GET /api/v1/financial-report/export. A diferencia de la consulta, `period` es obligatorio.
-export const exportReport = ({ scope, periodicity, period }) => {
+// El CSV de M3 se reorganiza en vertical (Concepto,Valor) para abrirlo legible en Excel; ver reportCsv.js.
+export const exportReport = async ({ scope, periodicity, period }) => {
   const query = scopeQuery(scope)
   query.set('periodicity', periodicity)
   query.set('period', period)
-  return requestFile('m3', `/api/v1/financial-report/export?${query}`, { accept: 'text/csv, application/problem+json' })
+  const { blob, filename } = await requestFile('m3', `/api/v1/financial-report/export?${query}`, { accept: 'text/csv, application/problem+json' })
+  const readable = toReadableReportCsv(await blob.text())
+  return { blob: new Blob([readable], { type: 'text/csv;charset=utf-8' }), filename }
 }
 
 // UC11 · GET /api/v1/financial-parameters. Devuelve `null` si aún no hay configuración (404 PARAMETERS_NOT_CONFIGURED).

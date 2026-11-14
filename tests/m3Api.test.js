@@ -146,7 +146,8 @@ test('UC13 informe: traduce campos y conserva la variación no calculable', asyn
 })
 
 test('UC13 export: pide CSV aceptando Problem Details y lee el nombre del archivo', async () => {
-  respond = () => new Response('tipo,monto\n', {
+  const backendCsv = 'Alcance,Periodo,Total Cobros\r\nOWNER,2026-10,585000.00\r\n'
+  respond = () => new Response(backendCsv, {
     status: 200, headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="informe_financiero_2026-10.csv"' },
   })
   const { blob, filename } = await api.exportReport({ scope: 'owner', periodicity: 'MONTHLY', period: '2026-10' })
@@ -154,7 +155,9 @@ test('UC13 export: pide CSV aceptando Problem Details y lee el nombre del archiv
   assert.equal(calls[0].headers.Accept, 'text/csv, application/problem+json')
   assert.equal(calls[0].url.searchParams.get('owner_id'), OWNER_ID)
   assert.equal(filename, 'informe_financiero_2026-10.csv')
-  assert.equal(await blob.text(), 'tipo,monto\n')
+  // El archivo que se guarda es la versión vertical legible (ver tests/reportCsv.test.js).
+  assert.equal(await blob.text(), 'sep=,\r\nConcepto,Valor\r\nAlcance,Propietario\r\nPeriodo,2026-10\r\nTotal cobros,585000.00\r\n')
+  assert.match(blob.type, /^text\/csv/)
 })
 
 test('UC11: sin configuración devuelve null y los errores de campo llegan en ApiError', async () => {
