@@ -6,6 +6,8 @@ import BoatDetailPage from '@/features/reservations/pages/BoatDetailPage'
 import ExplorePage from '@/features/reservations/pages/ExplorePage'
 import MyReservationsPage from '@/features/reservations/pages/MyReservationsPage'
 import PaymentPage from '@/features/reservations/pages/PaymentPage'
+import PaymentMethodPage from '@/features/reservations/pages/PaymentMethodPage'
+import CheckoutLayout from '@/features/reservations/checkout/CheckoutLayout'
 import ReservationDetailPage from '@/features/reservations/pages/ReservationDetailPage'
 import AdminFleetPage from '@/features/boats/pages/AdminFleetPage'
 import AdminOwnerPage from '@/features/boats/pages/AdminOwnerPage'
@@ -30,7 +32,14 @@ export const router = createBrowserRouter([
     children: [
       { path: '/explorar', element: <ExplorePage /> },
       { path: '/explorar/:boatId', element: <BoatDetailPage /> },
-      { path: '/explorar/:boatId/pago', element: <PaymentPage /> },
+      {
+        path: '/explorar/:boatId/pago',
+        element: <CheckoutLayout />,
+        children: [
+          { index: true, element: <PaymentPage /> },
+          { path: 'metodo', element: <PaymentMethodPage /> },
+        ],
+      },
       { path: '/mis-reservas', element: <MyReservationsPage /> },
       { path: '/mis-reservas/:reservationId', element: <ReservationDetailPage /> },
     ],

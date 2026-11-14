@@ -25,3 +25,7 @@ dist-ssr
 
 .env
 .env.local
+
+# Resultados locales de las pruebas de navegador (sin versionar).
+test-results/
+playwright-report/

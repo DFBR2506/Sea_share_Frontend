@@ -7,6 +7,12 @@ export const isSameDay = (a, b) => !!a && !!b && a.getTime() === b.getTime()
 export const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 export const nightsBetween = (a, b) => Math.round((b - a) / 86400000)
 
+/** Días cobrables, incluyendo las fechas de inicio y fin. */
+export function inclusiveDays(start, end) {
+  const day = (date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  return (day(end) - day(start)) / 86400000 + 1
+}
+
 // ISO local "YYYY-MM-DD" (para query params)
 export const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 export const fromISO = (s) => {
