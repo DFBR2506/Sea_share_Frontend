@@ -6,6 +6,16 @@ const summary = `/explorar/ocean-whisper/pago?${selection}`
 const method = `/explorar/ocean-whisper/pago/metodo?${selection}`
 const storedCheckout = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem('seashare.checkout.v1')))
 
+// Respuesta con la forma del contrato UC02 (POST /api/v1/estimates/individual).
+function syntheticEstimate({ boat_id, start_date, end_date, passengers }) {
+  const days = Math.round((Date.parse(end_date) - Date.parse(start_date)) / 86400000) + 1
+  return {
+    boat_id, start_date, end_date, duration_days: days, passengers,
+    estimated_total: `${480000 * days + 15000 * passengers}.00`,
+    warning: 'Valor estimado. El valor incluye el seguro náutico, pero no incluye el depósito de garantía ni penalidades o ajustes derivados de cambios posteriores de la reserva',
+  }
+}
+
 const test = base.extend({
   page: async ({ page }, runTest) => {
     const forbidden = []
@@ -23,6 +33,10 @@ const test = base.extend({
       // Recurso global preexistente de index.html; aislarlo sin descargar fuentes.
       if (url.origin === 'https://fonts.googleapis.com' && url.pathname === '/css2') {
         return route.fulfill({ contentType: 'text/css', body: '' })
+      }
+      // UC02 de M3: estimación sintética determinista (el E2E no depende del backend).
+      if (url.origin === 'http://127.0.0.1:5197' && url.pathname === '/api/m3/api/v1/estimates/individual') {
+        return route.fulfill({ json: syntheticEstimate(route.request().postDataJSON()) })
       }
       if (url.origin !== 'http://127.0.0.1:5197' || url.pathname.startsWith('/api/')) {
         forbidden.push(`${route.request().method()} ${url.origin}${url.pathname}`)
