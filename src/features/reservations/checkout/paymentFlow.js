@@ -1,24 +1,28 @@
 import { detachedPaymentAdapter } from './detachedPaymentAdapter.js'
-import { normalizePayment, toM3PaymentFields } from './paymentContract.js'
-import { tokenizationEvidence } from './paymentBrickSettings.js'
+import { normalizePayment } from './paymentContract.js'
+import { getReservation } from '../api'
 
 // El contrato sensible vive en este cierre, nunca en React Query ni en storage.
-export function createPaymentFlow({ checkoutId, contact, amount, expiresAt,
+export function createPaymentFlow({ checkoutId, reservationId, acceptsCancellationPolicy, contact, amount, expiresAt,
   adapter = detachedPaymentAdapter, now = Date.now, onChange = () => {} }) {
   let view = { status: 'loading_sdk', message: '', evidence: null }
   let captured = null
   let pending = null
   let disposed = false
   let abort
+  let paymentStarted = false
+  let paymentAccepted = false
+  let reservationStatus = null
 
   const publish = (status, message = '', evidence = null) => {
-    view = { status, message, evidence }
+    view = { status, message, evidence, reservationStatus }
     if (!disposed) onChange(view)
   }
   const expire = () => {
+    if (paymentStarted) return
     captured = null
     abort?.abort()
-    if (!disposed) publish('expired', 'La ventana del checkout terminó. No se realizó ningún cobro.')
+    if (!disposed) publish('expired', 'La ventana del checkout terminó.')
   }
   const ensureActive = () => {
     if (disposed) throw new Error('La captura fue cancelada.')
@@ -37,7 +41,7 @@ export function createPaymentFlow({ checkoutId, contact, amount, expiresAt,
       publish('ready')
     },
     fail(message) {
-      if (disposed || pending || view.status === 'expired') return
+      if (disposed || pending || captured || view.status === 'expired') return
       captured = null
       if (now() >= expiresAt) return expire()
       publish('error', message)
@@ -55,37 +59,35 @@ export function createPaymentFlow({ checkoutId, contact, amount, expiresAt,
       const signal = abort.signal
       pending = Promise.resolve().then(async () => {
         ensureActive()
-        let payment = normalizePayment({ checkoutId, contact, result, additionalData, amount, expiresAt }, now())
+        let payment = normalizePayment({ checkoutId, reservationId, acceptsCancellationPolicy, contact, result, additionalData, amount, expiresAt }, now())
         try {
-          // Revalidar inmediatamente antes y después de la frontera asíncrona.
           ensureActive()
+          paymentStarted = true
           const response = await adapter(payment, { signal })
-          ensureActive()
-          if (signal.aborted || response?.mode !== 'detached'
-            || response.outcome !== 'tokenized' || response.paymentCreated !== false) {
-            throw new Error('Respuesta local inesperada.')
-          }
+          paymentAccepted = true
           captured = payment
-          const m3Fields = toM3PaymentFields(payment)
-          publish('tokenized', '', {
-            ...tokenizationEvidence(payment, payment.additionalData),
-            contactNamePresent: Boolean(payment.contact.name),
-            contactPhonePresent: Boolean(payment.contact.phone),
-            m3PaymentFieldsPresent: Boolean(m3Fields.payment_token_ref && m3Fields.payment_metadata.payer_email),
-            mode: response.mode,
-            outcome: response.outcome,
-          })
+          for (let attempt = 0; attempt < 6; attempt += 1) {
+            await new Promise((resolve, reject) => {
+              if (signal.aborted) return reject(new Error('La captura fue cancelada.'))
+              const cancel = () => { clearTimeout(timer); reject(new Error('La captura fue cancelada.')) }
+              const timer = setTimeout(() => { signal.removeEventListener('abort', cancel); resolve() }, 3000)
+              signal.addEventListener('abort', cancel, { once: true })
+            })
+            if (disposed || signal.aborted) throw new Error('La captura fue cancelada.')
+            const reservation = await getReservation(reservationId)
+            reservationStatus = reservation.status
+            publish('tokenizing')
+            if (reservationStatus === 'CONFIRMADA') break
+          }
+          publish('tokenized')
           return response
         } finally {
           payment = null
         }
-      }).catch(() => {
-        captured = null
-        if (!disposed && (now() >= expiresAt || view.status === 'expired')) expire()
-        else if (!disposed) publish('error', 'No se pudieron capturar los datos. Revisa el formulario e inténtalo de nuevo. No se realizó ningún cobro.')
-        // No propagar errores del SDK/adaptador que puedan contener datos personales.
-        throw new Error(disposed ? 'La captura fue cancelada.'
-          : view.status === 'expired' ? 'La ventana del checkout terminó.' : 'No se pudo completar la captura de prueba.')
+      }).catch((error) => {
+        if (!paymentAccepted) captured = null
+        if (!disposed) publish(paymentAccepted ? 'tokenized' : 'error', error.message)
+        throw error
       }).finally(() => { pending = null })
       publish('tokenizing')
       return pending

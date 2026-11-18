@@ -7,9 +7,7 @@ export function contactErrors(contact) {
   }
 }
 
-// Contrato local, no un request a un endpoint existente. Solo campos permitidos;
-// nunca PAN, CVV, vencimiento, BIN ni el objeto original mutable del SDK.
-export function normalizePayment({ checkoutId, contact, result, additionalData, amount, expiresAt }, now = Date.now()) {
+export function normalizePayment({ checkoutId, reservationId, acceptsCancellationPolicy, contact, result, additionalData, amount, expiresAt }, now = Date.now()) {
   if (!checkoutId || now >= expiresAt || !Number.isFinite(expiresAt)) {
     throw new Error('El checkout no está vigente.')
   }
@@ -39,7 +37,8 @@ export function normalizePayment({ checkoutId, contact, result, additionalData, 
   }
   return {
     checkoutId,
-    reservationId: null, // No inventar un UUID de reserva a partir del checkout local.
+    reservationId,
+    acceptsCancellationPolicy,
     contact: { name: contact.name.trim(), phone: contact.phone.trim() },
     selectedPaymentMethod: result.selectedPaymentMethod,
     formData,
@@ -47,10 +46,12 @@ export function normalizePayment({ checkoutId, contact, result, additionalData, 
   }
 }
 
-// Proyección parcial del evento que M3 ya consume. No publica AMQP ni añade
-// estados/fechas de negocio. issuer_id e identificación no tienen soporte en M3.
 export function toM3PaymentFields(payment) {
-  const metadata = { payer_email: payment.formData.payer.email }
+  const metadata = {
+    payer_email: payment.formData.payer.email,
+    payment_method_id: payment.formData.payment_method_id,
+    installments: payment.formData.installments,
+  }
   if (payment.additionalData.lastFourDigits) metadata.last_four = payment.additionalData.lastFourDigits
   return {
     payment_token_ref: payment.formData.token,
