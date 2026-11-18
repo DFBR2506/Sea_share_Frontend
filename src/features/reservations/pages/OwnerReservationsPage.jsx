@@ -2,19 +2,19 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SlidingTabs, StatusBadge } from '@/components/ui'
 import { money } from '@/lib/dates'
-import { RESERVATION_STATUS_UI } from '../api/ownerMocks'
-import { useBoats, useOwnerReservations } from '../hooks'
+import { getReservationStatusUI } from '../api/statusMap'
+import { useOwnerReservations } from '../hooks'
 import styles from './pages.module.css'
 import owner from './owner.module.css'
 
 export default function OwnerReservationsPage() {
   const navigate = useNavigate()
-  const { data: reservations = [], isPending } = useOwnerReservations()
-  const { data: boats } = useBoats()
+  const { data: reservations = [], isPending, error } = useOwnerReservations()
   const [tab, setTab] = useState('historial')
 
   const shown = reservations.filter((r) => (tab === 'canceladas' ? r.status === 'CANCELADA' : true))
-  const boatName = (id) => boats?.find((b) => b.id === id)?.name ?? '…'
+
+  if (error) return <p role="alert" className={styles.state}>{error.code}: {error.message}</p>
 
   return (
     <>
@@ -26,7 +26,7 @@ export default function OwnerReservationsPage() {
       {!isPending && shown.length === 0 && <p className={styles.state}>No hay reservas en esta vista.</p>}
       <div className={owner.list}>
         {shown.map((r) => {
-          const ui = RESERVATION_STATUS_UI[r.status]
+          const ui = getReservationStatusUI(r.status)
           const open = () => navigate(`/owner/reservas/${r.id}`)
           return (
             <article
@@ -39,7 +39,7 @@ export default function OwnerReservationsPage() {
             >
               <div className={owner.thumb}>FOTO</div>
               <div className={owner.info}>
-                <h3>{boatName(r.boatId)}</h3>
+                <h3>{r.boatName}</h3>
                 <p>{r.dates} · {r.duration} · {r.guest} · {r.pax} pasajeros</p>
                 {r.cancelNote && <p>{r.cancelNote}</p>}
               </div>

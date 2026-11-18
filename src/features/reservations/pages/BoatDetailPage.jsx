@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
-import { formatFull, formatRange, money, toISO } from '@/lib/dates'
-import { priceBreakdown } from '../api'
+import { formatFull, formatRange, toISO } from '@/lib/dates'
+import { getQuotation } from '../api'
 import { useBoat } from '../hooks'
 import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
@@ -12,16 +13,24 @@ import styles from './pages.module.css'
 export default function BoatDetailPage() {
   const { boatId } = useParams()
   const navigate = useNavigate()
-  const { data: boat, isPending } = useBoat(boatId)
+  const { data: boat, isPending, error } = useBoat(boatId)
   const [range, setRange] = useState({ start: null, end: null })
-  const [pax, setPax] = useState(1)
+  const [pax, setPax] = useState(null)
+  const startDate = range.start ? toISO(range.start) : ''
+  const endDate = range.end ? toISO(range.end) : ''
+  const ready = Boolean(startDate && endDate && Number.isInteger(pax) && pax > 0 && pax <= boat?.passengers)
+  const { data: quotation, error: quotationError, isFetching } = useQuery({
+    queryKey: ['m2', 'quotation', boatId, startDate, endDate, pax],
+    queryFn: () => getQuotation(boatId, startDate, endDate, pax),
+    enabled: ready, staleTime: 0, retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false,
+  })
 
+  if (error) return <p role="alert" className={styles.state}>{error.message}</p>
   if (isPending) return <p className={styles.state}>Cargando…</p>
   if (!boat) return <p className={styles.state}>No encontramos esta embarcación.</p>
 
-  const price = range.start && range.end ? priceBreakdown(boat.pricePerDay, range.start, range.end, pax) : null
-  const days = price?.days ?? 0
-  const rangeLabel = days ? formatRange(range.start, range.end) : ''
+  const days = quotation?.total_days
+  const rangeLabel = ready ? formatRange(range.start, range.end) : ''
 
   const goToPayment = () => {
     try { clearExpiredCheckout(window.sessionStorage) } catch { /* Storage bloqueado. */ }
@@ -65,21 +74,22 @@ export default function BoatDetailPage() {
 
           <div className={styles.booking}>
             <div className={styles.bookingHead}>
-              <div className={styles.price}>{money(boat.pricePerDay)} <small>/ día</small></div>
+              <div className={styles.price}>Total estimado: {ready && !isFetching && !quotationError ? quotation?.total_amount : ''} {quotation?.currency}</div>
               {days > 0 && <span className={styles.chip}>{rangeLabel}</span>}
             </div>
             <div className={styles.paxRow}>
               <div><strong>Pasajeros</strong><span className={styles.muted}>Máx. {boat.passengers} personas</span></div>
               <div className={styles.stepper}>
-                <button type="button" aria-label="Menos pasajeros" disabled={pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
-                <span>{pax}</span>
-                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax(pax + 1)}>+</button>
+                <button type="button" aria-label="Menos pasajeros" disabled={pax == null || pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
+                <span>{pax ?? '—'}</span>
+                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax((pax ?? 0) + 1)}>+</button>
               </div>
             </div>
-            {days > 0 && (
-              <div className={styles.totalRow}><span>Alquiler: {days} {days === 1 ? 'día' : 'días'} × {money(boat.pricePerDay)}</span><strong>{money(price.base)}</strong></div>
-            )}
-            <Button block disabled={!days} onClick={goToPayment}>Reservar</Button>
+            {!ready && <p>Elige fechas y pasajeros para ver el total estimado</p>}
+            {ready && isFetching && <p role="status">Cargando…</p>}
+            {quotationError && <p role="alert">{quotationError.message}</p>}
+            {ready && quotation && !isFetching && !quotationError && <p>{days} días · {quotation.warning}</p>}
+            <Button block disabled={!ready || !quotation || isFetching || Boolean(quotationError)} onClick={goToPayment}>Reservar</Button>
           </div>
         </div>
       </div>
