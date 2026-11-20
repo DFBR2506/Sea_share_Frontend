@@ -3,6 +3,12 @@ import { mapVessel } from './vesselMapper'
 import { mapReservation } from './reservationMapper'
 import { mapReservationStatus } from './statusMap'
 import { OWNER_RESERVATIONS, SEED_DISPUTES } from './ownerMocks'
+import { mockBreakdown } from './pricing'
+import { inclusiveDays } from '@/lib/dates'
+
+// Capa de acceso a datos del modulo 2 que habla con M2 real.
+// Las estimaciones reales de precio (M3) se acceden desde features/finance.
+export { boatUuid } from './boatUuids'
 
 const delay = (value, ms = 250) => new Promise((resolve) => setTimeout(() => resolve(value), ms))
 
@@ -29,6 +35,9 @@ export const listBoats = async ({ passengers, type, startDate, endDate, includeP
   } while (page <= totalPages)
   return includePagination ? { vessels, pagination } : vessels
 }
+
+// Desglose mock del checkout (COP), con la misma regla que las reservas de ejemplo.
+export const priceBreakdown = (dailyRate, start, end, passengers) => mockBreakdown(dailyRate, inclusiveDays(start, end), passengers)
 
 export const getBoat = (id) => request('m2', `/api/v1/vessels/${id}`).then(mapVessel)
 

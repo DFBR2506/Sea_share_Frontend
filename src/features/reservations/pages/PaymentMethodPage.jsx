@@ -4,6 +4,7 @@ import { formatRange } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import PaymentDetails from '../components/PaymentDetails'
+import PaymentConfirmationPanel from '../components/PaymentConfirmationPanel'
 import styles from './pages.module.css'
 
 export default function PaymentMethodPage() {
@@ -26,11 +27,16 @@ export default function PaymentMethodPage() {
       <p className={styles.muted}>Último paso: datos de contacto y pago.</p>
 
       <div className={styles.pay}>
-        <section className={styles.panel} aria-labelledby="payment-details-title">
-          <h2 id="payment-details-title">Datos de contacto y pago</h2>
-          <PaymentDetails />
-          {expired && <Button onClick={() => navigate(`/explorar/${boatId}`)}>Volver a la embarcación</Button>}
-        </section>
+        <div>
+          <section className={styles.panel} aria-labelledby="payment-details-title">
+            <h2 id="payment-details-title">Datos de contacto y pago</h2>
+            {!expired && <>
+              <PaymentDetails />
+            </>}
+            {expired && <Button onClick={() => navigate(`/explorar/${boatId}`)}>Volver a la embarcación</Button>}
+          </section>
+          <PaymentConfirmationPanel />
+        </div>
 
         <aside className={styles.sidebar}>
           <section className={styles.panel}>

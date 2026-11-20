@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { BoatCard } from '@/components/cards'
 import { FilterBar } from '@/components/filters'
-import { moneyInt } from '@/lib/dates'
-import { listBoats } from '../api'
+import { copDecimal } from '@/lib/dates'
+import { m3ErrorMessage } from '@/features/finance/errors'
+import { useEstimateBatch } from '@/features/finance/hooks'
+import { listBoats, boatUuid } from '../api'
 import styles from './pages.module.css'
 
 const TYPES = [{ value: 'velero', label: 'Velero' }, { value: 'yate', label: 'Yate' }, { value: 'catamaran', label: 'Catamarán' }]
@@ -39,6 +41,19 @@ export default function ExplorePage() {
   const visible = validFilters ? result?.vessels ?? [] : []
   const toggle = (v) => setSelected((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]))
 
+  // UC01: estimacion por lote para hoy con 1 dia, 1 pasajero y seguro.
+  // Usa el UUID de Flota si existe o el ID de la embarcacion.
+  const boatIds = [...new Set(visible.map((b) => boatUuid(b.id) ?? b.id).filter(Boolean))]
+  const { data: batch, isError: estimatesFailed, error: estimatesError } = useEstimateBatch(boatIds)
+
+  const priceOf = (boat) => {
+    const uuid = boatUuid(boat.id) ?? boat.id
+    const total = batch?.amounts[uuid]
+    if (total != null) return `≈ ${copDecimal(total)} · 1 día · 1 pasajero`
+    if (estimatesFailed || batch) return 'Precio no disponible'
+    return 'Consultando…'
+  }
+
   return (
     <>
       <h1 className={styles.title}>Populares esta semana</h1>
@@ -61,13 +76,14 @@ export default function ExplorePage() {
       {!validDates && <p role="alert" className={styles.state}>La fecha de fin no puede ser anterior a la de inicio.</p>}
       {error && <p role="alert" className={styles.state}>{error.message}</p>}
       {validFilters && !error && !isPending && visible.length === 0 && <p className={styles.state}>No hay embarcaciones con esos filtros.</p>}
+      {estimatesFailed && <p className={styles.state} role="alert">No se pudieron obtener las estimaciones de precio: {m3ErrorMessage(estimatesError)}</p>}
       <div className={styles.grid}>
         {visible.map((b) => (
           <BoatCard
             key={b.id}
             name={b.name}
             meta={`${b.shortLocation} · ${b.passengers} pasajeros · ${b.captain ? 'Capitán incluido' : 'Sin capitán'}`}
-            price={`${moneyInt(b.pricePerDay).replace(/^/, '')} · Total estimado`}
+            price={priceOf(b)}
             actionVariant="primary"
             onAction={() => navigate(`/explorar/${b.id}`)}
             onClick={() => navigate(`/explorar/${b.id}`)}

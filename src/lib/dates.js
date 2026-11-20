@@ -34,3 +34,13 @@ export const moneyInt = (n) => `$${n.toLocaleString('en-US')}`
 export const copMoney = (n) => `$ ${n.toLocaleString('es-CO')} COP`
 export const copPlain = (n) => `$ ${n.toLocaleString('en-US')}`
 export const millions = (n) => `$ ${n.toFixed(2)} M`
+
+/** Importe del contrato M3 (string decimal con 2 cifras, p. ej. "350000.00") → "$ 350.000,00 COP".
+ * La capa de datos conserva el string; solo la pantalla lo formatea. */
+export const copDecimal = (s) => `$ ${Number(s).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} COP`
+
+/** ISO-8601 UTC → "26 sep · 14:30" en hora local */
+export const formatDateTime = (iso) => {
+  const d = new Date(iso)
+  return `${d.getDate()} ${SHORT[d.getMonth()]} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}

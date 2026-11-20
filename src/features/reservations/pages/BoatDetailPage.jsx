@@ -4,9 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, DateRangeCalendar } from '@/components/ui'
-import { formatFull, formatRange, toISO } from '@/lib/dates'
-import { getQuotation } from '../api'
+import { copDecimal, formatFull, formatRange, copMoney, inclusiveDays, toISO } from '@/lib/dates'
+import { m3ErrorMessage } from '@/features/finance/errors'
+import { useEstimate } from '@/features/finance/hooks'
 import { useBoat } from '../hooks'
+import { boatUuid, getQuotation } from '../api'
 import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
 
@@ -25,18 +27,31 @@ export default function BoatDetailPage() {
     enabled: ready, staleTime: 0, retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false,
   })
 
+  const days = range.start && range.end ? inclusiveDays(range.start, range.end) : 0
+  const estimateBoatId = boatUuid(boatId) ?? boatId
+  // UC02 · estimación real de M3: la clave del query cambia con la selección, así la respuesta
+  // de una selección anterior se descarta y la petición en curso se aborta con su señal.
+  const estimate = useEstimate({
+    boatId: estimateBoatId,
+    startDate: days ? toISO(range.start) : '',
+    endDate: days ? toISO(range.end) : '',
+    passengers: pax,
+  })
+
   if (error) return <p role="alert" className={styles.state}>{error.message}</p>
   if (isPending) return <p className={styles.state}>Cargando…</p>
   if (!boat) return <p className={styles.state}>No encontramos esta embarcación.</p>
 
-  const days = quotation?.total_days
-  const rangeLabel = ready ? formatRange(range.start, range.end) : ''
+  const rangeLabel = days ? formatRange(range.start, range.end) : ''
 
   const goToPayment = () => {
     try { clearExpiredCheckout(window.sessionStorage) } catch { /* Storage bloqueado. */ }
     const q = new URLSearchParams({ start: toISO(range.start), end: toISO(range.end), pax: String(pax) })
     navigate(`/explorar/${boat.id}/pago?${q}`)
   }
+
+  // Sin UUID en el stub de Flota la consulta queda desactivada (isPending eterno en v5): no hay estimación.
+  const estimateTotal = !estimateBoatId ? 'No disponible' : estimate.isPending ? 'Calculando…' : estimate.data ? copDecimal(estimate.data.total) : 'No disponible'
 
   return (
     <>
@@ -74,7 +89,7 @@ export default function BoatDetailPage() {
 
           <div className={styles.booking}>
             <div className={styles.bookingHead}>
-              <div className={styles.price}>Total estimado: {ready && !isFetching && !quotationError ? quotation?.total_amount : ''} {quotation?.currency}</div>
+              <div className={styles.price}>{copMoney(boat.pricePerDay)} <small>/ día</small></div>
               {days > 0 && <span className={styles.chip}>{rangeLabel}</span>}
             </div>
             <div className={styles.paxRow}>
@@ -85,10 +100,21 @@ export default function BoatDetailPage() {
                 <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax((pax ?? 0) + 1)}>+</button>
               </div>
             </div>
-            {!ready && <p>Elige fechas y pasajeros para ver el total estimado</p>}
-            {ready && isFetching && <p role="status">Cargando…</p>}
+            {days > 0 && (
+              <>
+                <div className={styles.totalRow}>
+                  <span>Total estimado · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</span>
+                  <strong>{estimateTotal}</strong>
+                </div>
+                {estimate.data?.warning && <p className={styles.muted}>{estimate.data.warning}</p>}
+                {estimate.isError && (
+                  <p className={styles.muted} role="alert">
+                    No se pudo estimar el total: {m3ErrorMessage(estimate.error)}
+                  </p>
+                )}
+              </>
+            )}
             {quotationError && <p role="alert">{quotationError.message}</p>}
-            {ready && quotation && !isFetching && !quotationError && <p>{days} días · {quotation.warning}</p>}
             <Button block disabled={!ready || !quotation || isFetching || Boolean(quotationError)} onClick={goToPayment}>Reservar</Button>
           </div>
         </div>

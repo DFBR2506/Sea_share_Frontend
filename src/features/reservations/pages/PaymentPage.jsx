@@ -3,6 +3,7 @@ import { Button } from '@/components/ui'
 import { formatRange } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
+import ReservationValuePanel from '../components/ReservationValuePanel'
 import styles from './pages.module.css'
 
 export default function PaymentPage() {
@@ -38,6 +39,8 @@ export default function PaymentPage() {
               {quotation.warning && <p>{quotation.warning}</p>}
             </div>
           </section>
+
+          <ReservationValuePanel />
 
           <label className={`${styles.panel} ${styles.consent}`}>
             <input type="checkbox" checked={accepted} disabled={expired} onChange={(e) => setAccepted(e.target.checked)} />

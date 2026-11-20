@@ -2,38 +2,48 @@ import { useState } from 'react'
 import { FinancialSummary } from '@/components/cards'
 import downloadIcon from '@/assets/icons/download.svg'
 import { Dropdown, SlideButton, SlidingTabs } from '@/components/ui'
-import { millions } from '@/lib/dates'
-import { listPeriods } from '../api'
-import { TYPE_LABEL } from '../api/mocks'
-import { useReport } from '../hooks'
+import { copDecimal } from '@/lib/dates'
+import { saveBlob } from '@/lib/download'
+import { PERIODICITY, listPeriods } from '../periods'
+import { TYPE_LABEL } from '../api'
+import { m3ErrorMessage } from '../errors'
+import { useExportReport, useReport } from '../hooks'
 import styles from '../components/FinanceUI.module.css'
 
-const PERIODICITY = [{ value: 'QUINCENAL', label: 'Quincenal' }, { value: 'MENSUAL', label: 'Mensual' }, { value: 'TRIMESTRAL', label: 'Trimestral' }]
-
-function downloadCsv(report, scope) {
-  const rows = [
-    ['Concepto', 'Valor (millones COP)'],
-    ['Cobros confirmados', report.cobros], ['Reembolsos confirmados', report.reembolsos],
-    ['Dispersiones confirmadas', report.dispersiones], ['Comisiones confirmadas', report.comisiones],
-    [scope === 'owner' ? 'Ganancias del propietario' : 'Neto generado', (scope === 'owner' ? report.ownerGain : report.net)[0]],
-  ]
-  const url = URL.createObjectURL(new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }))
-  const a = Object.assign(document.createElement('a'), { href: url, download: `informe-${report.periodicity.toLowerCase()}.csv` })
-  a.click()
-  URL.revokeObjectURL(url)
+const TYPES = Object.keys(TYPE_LABEL)
+// Importes del contrato como strings decimales: el signo se decide con Number solo al comparar.
+const signed = (s) => {
+  const n = Number(s)
+  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${copDecimal(Math.abs(n))}`
 }
 
 /** Informe financiero (feature 013). scope: 'owner' | 'admin'. */
 export default function FinanceReportPage({ scope }) {
-  const [periodicity, setPeriodicity] = useState('MENSUAL')
+  const [periodicity, setPeriodicity] = useState('MONTHLY')
   const [period, setPeriod] = useState('')
   const periods = listPeriods(periodicity)
-  const { data: r, isPending } = useReport({ periodicity, period: period || periods[0] })
+  const { data: r, isPending, isError, error } = useReport({ scope, periodicity, period })
+  const exporter = useExportReport()
+  // El export exige un período explícito: se usa el que el informe ya resolvió (incluso si se pidió el último cerrado).
+  // `r?.` es obligatorio: el React Compiler usa estas lecturas como dependencias de memo en
+  // cada render, también mientras el informe carga y `r` aún es undefined.
+  const resolvedPeriodicity = r?.periodicity
+  const resolvedPeriod = r?.period
+  const exportCsv = () => {
+    if (!resolvedPeriod) return
+    exporter.mutate(
+      { scope, periodicity: resolvedPeriodicity, period: resolvedPeriod },
+      { onSuccess: ({ blob, filename }) => saveBlob(blob, filename ?? `informe_financiero_${resolvedPeriod}.csv`) },
+    )
+  }
 
   const changePeriodicity = (v) => { setPeriodicity(v); setPeriod('') }
-  const big = scope === 'owner'
-    ? { label: 'Ganancias del propietario', sub: 'Total de dispersiones confirmadas a favor', data: r?.ownerGain }
-    : { label: 'Neto generado', sub: 'Cobros − reembolsos − dispersiones', data: r?.net }
+  const bigLabel = scope === 'owner' ? 'Ganancias del propietario' : 'Neto generado'
+  const bigSub = scope === 'owner' ? 'Total de dispersiones confirmadas a favor' : 'Cobros − reembolsos − dispersiones'
+  const cmp = r?.comparison
+  const cmpText = cmp && `${signed(cmp.absolute)} · ${cmp.percentage == null ? 'variación no calculable' : `${Number(cmp.percentage) > 0 ? '+' : ''}${cmp.percentage}%`} frente a ${cmp.previousPeriod}`
+  const counts = r?.counts ?? {}
+  const count = (t) => `${counts[t] ?? 0} registros`
 
   return (
     <>
@@ -47,38 +57,42 @@ export default function FinanceReportPage({ scope }) {
             <span className={styles.fieldLabel}>Periodicidad</span>
             <SlidingTabs ariaLabel="Periodicidad" items={PERIODICITY} value={periodicity} onChange={changePeriodicity} />
           </div>
-          <div style={{ width: 220 }}>
-            <Dropdown label="Período" options={periods.map((p) => ({ value: p, label: p }))} value={period || periods[0]} onChange={(e) => setPeriod(e.target.value)} />
+          <div style={{ width: 260 }}>
+            <Dropdown label="Período" options={periods} value={period} onChange={(e) => setPeriod(e.target.value)} />
           </div>
         </div>
-        <SlideButton icon={downloadIcon} disabled={!r} onClick={() => downloadCsv(r, scope)}>Exportar CSV</SlideButton>
+        <SlideButton icon={downloadIcon} disabled={!r || exporter.isPending} onClick={exportCsv}>Exportar CSV</SlideButton>
       </div>
 
-      {isPending ? <p className={styles.empty}>Cargando…</p> : (
+      {exporter.isError && <p className={styles.empty} role="alert">No se pudo exportar el informe: {m3ErrorMessage(exporter.error)}</p>}
+      {isPending && <p className={styles.empty}>Cargando…</p>}
+      {isError && <p className={styles.empty} role="alert">{m3ErrorMessage(error)}</p>}
+      {r && (
         <>
           <div className={styles.kpis}>
-            <FinancialSummary label="Cobros confirmados" value={millions(r.cobros)} delta={`${r.deltas[0]} vs. período anterior`} />
-            <FinancialSummary label="Reembolsos confirmados" value={millions(r.reembolsos)} delta={`${r.deltas[1]} vs. período anterior`} />
-            <FinancialSummary label="Dispersiones confirmadas" value={millions(r.dispersiones)} delta={`${r.deltas[2]} vs. período anterior`} />
-            <FinancialSummary label="Comisiones confirmadas" value={millions(r.comisiones)} delta="Métrica informativa" />
+            <FinancialSummary label="Cobros confirmados" value={copDecimal(r.collections)} delta={count('CHARGE')} />
+            <FinancialSummary label="Reembolsos confirmados" value={copDecimal(r.refunds)} delta={count('REFUND')} />
+            <FinancialSummary label="Dispersiones confirmadas" value={copDecimal(r.settlements)} delta={count('SETTLEMENT')} />
+            <FinancialSummary label="Comisiones confirmadas" value={copDecimal(r.commissions)} delta={`${count('COMMISSION')} · métrica informativa`} />
           </div>
           <div className={styles.split}>
             <section className={`${styles.panel} ${styles.big}`}>
-              <p className={styles.bigLabel}>{big.label}</p>
-              <p className={styles.bigSub}>{big.sub}</p>
-              <p className={styles.bigValue}>+ {millions(big.data[0])} · {big.data[1]} frente al período anterior</p>
+              <p className={styles.bigLabel}>{bigLabel}</p>
+              <p className={styles.bigSub}>{bigSub}</p>
+              <p className={styles.bigValue}>{copDecimal(r.net)}</p>
+              <p className={styles.bigSub}>{cmpText}</p>
             </section>
             <section className={`${styles.panel} ${styles.byType}`}>
               <h3>Registros por tipo</h3>
               <dl>
-                {['COBRO', 'REEMBOLSO', 'DISPERSION', 'COMISION'].map((t, i) => (
-                  <div key={t} style={{ display: 'contents' }}><dt>{TYPE_LABEL[t]}</dt><dd>{r.counts[i]}</dd></div>
+                {TYPES.map((t) => (
+                  <div key={t} style={{ display: 'contents' }}><dt>{TYPE_LABEL[t]}</dt><dd>{counts[t] ?? 0}</dd></div>
                 ))}
               </dl>
             </section>
           </div>
           <p className={styles.footnote}>
-            {scope === 'owner' ? `Período cerrado · alcance propietario · garantías pendientes excluidas` : `Período cerrado · ${r.closing} · garantías pendientes excluidas`}
+            {r.closed ? 'Período cerrado' : 'Período en curso (abierto)'} · {r.period} · garantías pendientes excluidas
           </p>
         </>
       )}
