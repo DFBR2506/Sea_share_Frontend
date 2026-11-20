@@ -63,13 +63,13 @@ export default function ExplorePage() {
           onDatesClick={() => setDatesOpen((open) => !open)}
           onPassengersClick={() => setPassengersOpen((open) => !open)} />
       </div>
-      {datesOpen && <div className={styles.panel}>
-        <label>Inicio <input aria-label="Fecha de inicio" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+      {datesOpen && <div className={styles.filterPanel}>
+        <label className={styles.filterField}>Inicio <input className={styles.filterInput} aria-label="Fecha de inicio" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
         {' '}
-        <label>Fin <input aria-label="Fecha de fin" type="date" value={endDate} min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} /></label>
+        <label className={styles.filterField}>Fin <input className={styles.filterInput} aria-label="Fecha de fin" type="date" value={endDate} min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} /></label>
       </div>}
-      {passengersOpen && <label className={styles.panel}>Pasajeros
-        <input aria-label="Pasajeros" type="number" min="1" step="1" value={passengers}
+      {passengersOpen && <label className={styles.filterPanel + ' ' + styles.filterField}>Pasajeros
+        <input className={styles.filterInput} aria-label="Pasajeros" type="number" min="1" step="1" value={passengers}
           onChange={(event) => setPassengers(event.target.value)} />
       </label>}
       {!validPassengers && <p role="alert" className={styles.state}>Elige una cantidad entera de pasajeros mayor que cero.</p>}
