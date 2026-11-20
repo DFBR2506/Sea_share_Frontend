@@ -1,10 +1,12 @@
+import { ApiError, NetworkError } from '../../../lib/http.js'
 import { detachedPaymentAdapter } from './detachedPaymentAdapter.js'
 import { normalizePayment } from './paymentContract.js'
-import { getReservation } from '../api'
+import { getReservation as defaultGetReservation } from '../api'
 
 // El contrato sensible vive en este cierre, nunca en React Query ni en storage.
 export function createPaymentFlow({ checkoutId, reservationId, acceptsCancellationPolicy, contact, amount, expiresAt,
-  adapter = detachedPaymentAdapter, now = Date.now, onChange = () => {} }) {
+  adapter = detachedPaymentAdapter, now = Date.now, onChange = () => {},
+  getReservation = defaultGetReservation, pollIntervalMs = 3000, maxPollAttempts = 6 }) {
   let view = { status: 'loading_sdk', message: '', evidence: null }
   let captured = null
   let pending = null
@@ -63,14 +65,21 @@ export function createPaymentFlow({ checkoutId, reservationId, acceptsCancellati
         try {
           ensureActive()
           paymentStarted = true
-          const response = await adapter(payment, { signal })
+          let response
+          try {
+            response = await adapter(payment, { signal })
+          } catch (error) {
+            if (signal.aborted || error instanceof ApiError || error instanceof NetworkError) throw error
+            throw new Error('No se pudo procesar el pago. Intenta de nuevo.')
+          }
+          if (disposed || signal.aborted) throw new Error('La captura fue cancelada.')
           paymentAccepted = true
           captured = payment
-          for (let attempt = 0; attempt < 6; attempt += 1) {
+          for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
             await new Promise((resolve, reject) => {
               if (signal.aborted) return reject(new Error('La captura fue cancelada.'))
               const cancel = () => { clearTimeout(timer); reject(new Error('La captura fue cancelada.')) }
-              const timer = setTimeout(() => { signal.removeEventListener('abort', cancel); resolve() }, 3000)
+              const timer = setTimeout(() => { signal.removeEventListener('abort', cancel); resolve() }, pollIntervalMs)
               signal.addEventListener('abort', cancel, { once: true })
             })
             if (disposed || signal.aborted) throw new Error('La captura fue cancelada.')
@@ -86,7 +95,9 @@ export function createPaymentFlow({ checkoutId, reservationId, acceptsCancellati
         }
       }).catch((error) => {
         if (!paymentAccepted) captured = null
-        if (!disposed) publish(paymentAccepted ? 'tokenized' : 'error', error.message)
+        if (!disposed && (paymentAccepted || view.status !== 'expired')) {
+          publish(paymentAccepted ? 'tokenized' : 'error', error.message)
+        }
         throw error
       }).finally(() => { pending = null })
       publish('tokenizing')
