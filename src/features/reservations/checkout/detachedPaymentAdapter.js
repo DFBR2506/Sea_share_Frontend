@@ -1,4 +1,4 @@
-import { request } from '../../../lib/http'
+import { request } from '../../../lib/http.js'
 import { toM3PaymentFields } from './paymentContract.js'
 
 export async function detachedPaymentAdapter(payment, { signal } = {}) {

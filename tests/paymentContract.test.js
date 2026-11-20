@@ -29,9 +29,11 @@ test('nombre y teléfono son obligatorios; el contacto no duplica el correo del 
   assert.notEqual(payment.contact.name, payment.additionalData.cardholderName)
 })
 
-test('normaliza sin inventar la reserva y conserva los campos documentados', () => {
-  const payment = normalizePayment(input(), now)
-  assert.equal(payment.reservationId, null)
+test('normaliza y conserva la reserva, la aceptación de la política y los campos documentados', () => {
+  const reservationId = 'reservation-test-001'
+  const payment = normalizePayment({ ...input(), reservationId, acceptsCancellationPolicy: true }, now)
+  assert.equal(payment.reservationId, reservationId)
+  assert.equal(payment.acceptsCancellationPolicy, true)
   assert.equal(payment.checkoutId, 'local-checkout')
   assert.equal(payment.formData.token, 'token-test')
   assert.equal(payment.formData.issuer_id, '123')
@@ -87,7 +89,9 @@ test('no fabrica datos opcionales cuando el Brick no los devuelve', () => {
 test('proyecta las claves exactas soportadas por M3, sin simular un endpoint ni evento completo', () => {
   assert.deepEqual(toM3PaymentFields(normalizePayment(input(), now)), {
     payment_token_ref: 'token-test', payment_method_type: 'visa',
-    payment_metadata: { payer_email: 'payer@example.com', last_four: '4242' },
+    payment_metadata: {
+      payer_email: 'payer@example.com', payment_method_id: 'visa', installments: 1, last_four: '4242',
+    },
   })
 })
 
