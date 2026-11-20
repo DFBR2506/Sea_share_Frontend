@@ -2,15 +2,10 @@ import { request } from '../../../lib/http'
 import { mapVessel } from './vesselMapper'
 import { mapReservation } from './reservationMapper'
 import { mapReservationStatus } from './statusMap'
-import { OWNER_RESERVATIONS, SEED_DISPUTES } from './ownerMocks'
-import { mockBreakdown } from './pricing'
-import { inclusiveDays } from '@/lib/dates'
 
 // Capa de acceso a datos del modulo 2 que habla con M2 real.
 // Las estimaciones reales de precio (M3) se acceden desde features/finance.
 export { boatUuid } from './boatUuids'
-
-const delay = (value, ms = 250) => new Promise((resolve) => setTimeout(() => resolve(value), ms))
 
 export const listBoats = async ({ passengers, type, startDate, endDate, includePagination = false, signal } = {}) => {
   const vessels = []
@@ -36,9 +31,6 @@ export const listBoats = async ({ passengers, type, startDate, endDate, includeP
   return includePagination ? { vessels, pagination } : vessels
 }
 
-// Desglose mock del checkout (COP), con la misma regla que las reservas de ejemplo.
-export const priceBreakdown = (dailyRate, start, end, passengers) => mockBreakdown(dailyRate, inclusiveDays(start, end), passengers)
-
 export const getBoat = (id) => request('m2', `/api/v1/vessels/${id}`).then(mapVessel)
 
 export const getQuotation = (id, startDate, endDate, passengers) => {
@@ -56,15 +48,7 @@ export const getReservation = (id) => request('m2', `/api/v1/reservations/${id}`
 
 export const cancelReservation = (id) => request('m2', `/api/v1/reservations/${id}/cancellation`, { method: 'POST' })
 
-// ---- Lado Propietario / Administrador (store en memoria) ----
-let ownerReservations = OWNER_RESERVATIONS.map((r) => ({ ...r }))
-let disputes = SEED_DISPUTES.map((d) => ({ ...d }))
-const clone = (v) => delay(structuredClone(v))
-const patchReservation = (id, changes) => {
-  ownerReservations = ownerReservations.map((r) => (r.id === id ? { ...r, ...changes } : r))
-  return clone(ownerReservations.find((r) => r.id === id))
-}
-
+// ---- Lado Propietario / Administrador ----
 export const listOwnerReservations = () => request('m2', '/api/v1/reservations').then((data) => data.reservations.map(mapReservation))
 export const getOwnerReservation = (id) => request('m2', `/api/v1/reservations/${id}`).then((data) => ({
   ...mapReservation(data),
