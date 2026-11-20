@@ -54,7 +54,7 @@ export function mapReservation(reservation) {
     realArrival: itineraryTime(itinerary?.actual_arrival_at),
     breakdown: {
       base: payment?.rental_amount ?? null,
-      commission: 0,
+      commission: null,
       insurance: payment?.insurance_amount ?? null,
       deposit: payment?.guarantee_deposit_amount ?? null,
     },

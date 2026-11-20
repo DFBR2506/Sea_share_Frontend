@@ -32,7 +32,7 @@ export default function ReservationDetailPage() {
         <div>
           <h1 className={styles.title}>{boat.name}</h1>
           <p className={styles.muted}>{boat.location}</p>
-          <p className={styles.muted}>{boat.passengers} pasajeros · {boat.cabins} camarotes · {boat.lengthM} m de eslora</p>
+          <p className={styles.muted}>{boat.passengers} pasajeros · {boat.cabins} camarotes{boat.lengthM != null && <> · {boat.lengthM} m de eslora</>}</p>
           <div className={owner.gallery} aria-label="Fotos del barco">
             <div className={owner.empty}><img src={boatIcon} alt="" width="28" height="28" /><span>Sin fotos disponibles</span></div>
             <div className={owner.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
@@ -65,7 +65,7 @@ export default function ReservationDetailPage() {
             <span className={styles.muted}>{res.sectionTitle ?? 'Resumen de pago'}</span>
             <div className={styles.lines} style={{ margin: '12px 0' }}>
               <div className={styles.line}><span>Tarifa base</span><span>{b.base ?? '—'}</span></div>
-              <div className={styles.line}><span>Comisión</span><span>{b.commission}</span></div>
+              <div className={styles.line}><span>Comisión</span><span>{b.commission ?? '—'}</span></div>
               <div className={styles.line}><span>Seguro</span><span>{b.insurance ?? '—'}</span></div>
               <div className={styles.line}><span>Depósito</span><span>{b.deposit ?? '—'}</span></div>
             </div>

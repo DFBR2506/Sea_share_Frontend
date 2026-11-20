@@ -12,7 +12,7 @@ export function mapVessel(vessel) {
     captain: vessel?.captain_included ?? false,
     cabins: vessel?.cabin_count ?? 0,
     lengthFt: vessel?.length_feet ?? 0,
-    lengthM: 0,
+    lengthM: Number.isFinite(vessel?.length_feet) ? Number((vessel.length_feet * 0.3048).toFixed(1)) : null,
     pricePerDay: vessel?.estimated_total ?? 0,
     amenities: vessel?.amenities ?? [],
     host: { name: vessel?.owner?.validated_name ?? '', badge: '' },

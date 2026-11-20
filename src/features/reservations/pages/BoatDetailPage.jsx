@@ -71,7 +71,7 @@ export default function BoatDetailPage() {
         <div>
           <h1 className={styles.name}>{boat.name}</h1>
           <p className={styles.loc}>{boat.location}</p>
-          <p className={styles.specs}>{boat.passengers} pasajeros · {boat.cabins} camarotes · {boat.lengthM} m de eslora</p>
+          <p className={styles.specs}>{boat.passengers} pasajeros · {boat.cabins} camarotes{boat.lengthM != null && <> · {boat.lengthM} m de eslora</>}</p>
           <StatGrid items={[
             { value: boat.passengers, label: 'Pasajeros' },
             { value: boat.captain ? 'Sí' : 'No', label: 'Cap. incluido' },
