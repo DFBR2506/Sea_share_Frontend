@@ -94,8 +94,12 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
       {status === 'error' && <p className={styles.payNote} role="alert">{message}</p>}
       {status === 'expired' && <p className={styles.payNote} role="alert">{message}</p>}
       {!developmentPayment && <div id={target} hidden={status === 'tokenized' || status === 'expired'} aria-busy={status === 'loading_sdk' || status === 'tokenizing'} />}
-      {status === 'tokenized' && <div role="status">
+      {status === 'tokenized' && <div>
         {message && <p role="alert">{message}</p>}
+        {reservationStatus !== 'CONFIRMADA' && !message && <>
+          <p className={styles.payNote} role="status">Tu pago fue enviado, pero la reserva aún no aparece confirmada. Revísala en Mis reservas en unos minutos.</p>
+          <Button type="button" onClick={() => navigate('/mis-reservas')}>Ir a Mis reservas</Button>
+        </>}
       </div>}
       {reservationUI && <p role="status">{reservationUI.label}</p>}
     </>
