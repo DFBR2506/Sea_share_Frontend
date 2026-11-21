@@ -6,7 +6,7 @@ import { getReservation as defaultGetReservation } from '../api'
 // El contrato sensible vive en este cierre, nunca en React Query ni en storage.
 export function createPaymentFlow({ checkoutId, reservationId, acceptsCancellationPolicy, contact, amount, expiresAt,
   adapter = detachedPaymentAdapter, now = Date.now, onChange = () => {},
-  getReservation = defaultGetReservation, pollIntervalMs = 3000, maxPollAttempts = 6 }) {
+  getReservation = defaultGetReservation, pollIntervalMs = 3000, maxPollAttempts = 6, beforePayment = () => {} }) {
   let view = { status: 'loading_sdk', message: '', evidence: null }
   let captured = null
   let pending = null
@@ -64,6 +64,7 @@ export function createPaymentFlow({ checkoutId, reservationId, acceptsCancellati
         let payment = normalizePayment({ checkoutId, reservationId, acceptsCancellationPolicy, contact, result, additionalData, amount, expiresAt }, now())
         try {
           ensureActive()
+          beforePayment()
           paymentStarted = true
           let response
           try {

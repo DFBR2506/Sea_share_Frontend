@@ -42,3 +42,4 @@
 .formError { margin: 16px 0 0; font-size: 12px; color: var(--seashare-color-brand-accent); }
 .draftName { margin: 0 0 12px; font-size: 16px; font-weight: 700; font-style: italic; color: var(--seashare-color-text-brand); }
 .actionNote { margin: 12px 0 0; font-size: 11px; color: var(--seashare-color-text-secondary); }
+.uploadPreview { display: block; width: 100%; max-height: 240px; object-fit: contain; margin: var(--space-3) 0; border-radius: var(--radius-sm); background: var(--seashare-color-brand-soft); }

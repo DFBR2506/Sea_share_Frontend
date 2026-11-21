@@ -198,6 +198,16 @@ test('datos inválidos no alcanzan el adaptador', async () => {
   assert.equal(flow.snapshot.status, 'error')
 })
 
+test('una salida que venció mientras se llenaba la tarjeta no inicia un pago', async () => {
+  let calls = 0
+  const flow = createPaymentFlow(options({
+    beforePayment: () => { throw new Error('La salida ya pasó.') },
+    adapter: async () => { calls++ },
+  }))
+  await assert.rejects(flow.submit(result()), /La salida ya pasó/)
+  assert.equal(calls, 0)
+})
+
 test('los errores de la API se muestran tal cual', async () => {
   const message = 'El pago fue rechazado.'
   const apiError = new ApiError(422, { detail: message })

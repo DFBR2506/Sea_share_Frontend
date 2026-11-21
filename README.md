@@ -8,7 +8,31 @@ Frontend web de **SeaShare**, plataforma de alquiler náutico. Implementa el [pr
 | **M2** | Reservas (y disputas) | Arrendatario, Propietario, Administrador |
 | **M3** | Finanzas | Propietario, Admin Financiero |
 
-> **Estado actual:** todas las pantallas del prototipo están implementadas y funcionan con **datos mock en memoria**. Aún no hay conexión a los backends reales ni autenticación (ver [Pendiente](#pendiente)).
+> **Estado actual:** conectado a los servicios reales M1/M2/M3. OWNER y ADMIN usan el login de M1; RENTER y FINADMIN mantienen identidad de desarrollo. Las referencias a mocks y tokenización desacoplada más abajo documentan etapas anteriores, no el comportamiento actual del checkout.
+
+## Desarrollo con servicios desplegados
+
+El archivo local `.env.local` usa `/api/m1`, `/api/m2` y `/api/m3`, con los destinos `M1_PROXY_TARGET`, `M2_PROXY_TARGET` y `M3_PROXY_TARGET` apuntando al reverse proxy de `https://sea-share-frontend.vercel.app`. Ejecuta `npm run dev`; no hace falta desplegar el frontend. `.env.example` contiene la misma configuración de ejemplo.
+
+**Las acciones de la interfaz afectan datos reales**, incluidos registro de barcos, reservas, pagos y resolución de garantía. Las pruebas de checkout/disputas interceptan la red y sus proxies apuntan a un puerto local inactivo para no escribir en producción.
+
+- Las salidas deben ser futuras en la zona del puerto, también al iniciar el pago.
+- Los checkouts iniciados no se muestran como reservas confirmadas. Se conserva ID/clave/TTL al recargar. Salir intenta el abandono seguro; si M2 todavía no publica esa operación, queda el vencimiento automático como respaldo.
+- La garantía se abre automáticamente al finalizar la navegación. El propietario registra su reclamo durante las 24 horas siguientes, desde el detalle de la reserva completada; el admin lo revisa en `/admin/disputas`.
+- Las fotos PNG/JPEG se validan por contenido, se previsualizan y, si son pesadas, se reducen antes de enviarlas. No se guarda mientras se procesa la imagen. Un fallo del almacenamiento se distingue de un formato inválido.
+- El registro, la edición y el detalle de embarcaciones muestran la tarifa base por día en COP. El aviso de borrador pendiente se decide al entrar al registro, sin interrumpir el formulario al crear su propio borrador. El selector de pasajeros de una reserva comienza en 1.
+
+Los nuevos endpoints de M2 (`POST /api/v1/reservations/{id}/abandonment` y `GET /api/v1/disputes/{id}`) están implementados en el repositorio hermano `SeaShare-modulo-2`. Para probarlos antes de desplegar M2, ejecuta ese backend y cambia **solo** `M2_PROXY_TARGET=http://localhost:8080` en `.env.local` (o el puerto configurado), y reinicia Vite. Los endpoints que todavía no existen en el despliegue se tratan como compatibilidad, no como un nuevo login requerido.
+
+### Pagos y webhook
+
+El estado financiero se consulta automáticamente después del envío y también desde el detalle de la reserva. Un rechazo bancario y un error de credenciales son situaciones distintas: `Invalid credentials` / código 17 es un problema de configuración del servidor, no se arregla cambiando de tarjeta. M3 lo registra como `gateway_configuration_error`, sin presentar el cobro como rechazado por el banco ni reenviarlo automáticamente.
+
+El formulario seguro usa el total calculado de M3 (alquiler, seguro y depósito), no la estimación sin garantía. Sin Public Key o sin ese importe no se habilita el pago; no se envían tokens ficticios al backend desplegado.
+
+En el entorno que ejecuta M3, `GATEWAY_ACCESS_TOKEN` debe pertenecer a la misma aplicación y entorno que `VITE_MERCADOPAGO_PUBLIC_KEY` del frontend. `GATEWAY_WEBHOOK_SECRET` es la firma configurada en esa aplicación; no es el Access Token. Nunca colocar ninguno de esos secretos en variables `VITE_*`.
+
+La URL pública del receptor es `https://sea-share-frontend.vercel.app/api/m3/api/v1/webhook/gateway` (también puede usarse el endpoint HTTPS directo de M3). Recibe **POST firmados** con el tópico `payment`; un GET devuelve 405 y solo acredita que la ruta existe. El receptor verifica HMAC, persiste la notificación en outbox y consulta el pago real de forma asíncrona. No se deben simular webhooks ni repetir cobros sobre el despliegue para diagnosticarlo.
 
 ## Stack
 
@@ -253,7 +277,6 @@ Los archivos `mocks.js` / `ownerMocks.js` pueden eliminarse cuando ya no se usen
 - Integrar los contratos reales de M1, M2 y M3.
 - Autenticación real y obtención del rol (hoy el rol es un selector en el login).
 - Mapa interactivo para el puerto de atraque (hoy `MapPlaceholder`; ver frame «Prototipo · Mapa» de Figma).
-- Modal de proceso borrador del registro de embarcaciones (frames 28:676 a 28:863).
 - Valores calculados en el cliente que deben venir del backend: comisión, seguro y depósito del pago, política de cancelación, tolerancia de embarque.
 - Subida real de fotografías (hoy solo se selecciona el archivo).
 - Revisión visual fina contra Figma.

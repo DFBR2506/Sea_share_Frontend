@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui'
+import { copDecimal } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import { loadMercadoPagoSdk } from '../checkout/mercadoPagoSdk'
 import { mountPaymentBrick } from '../checkout/paymentBrickLifecycle'
@@ -8,14 +9,14 @@ import { paymentBrickSettings } from '../checkout/paymentBrickSettings'
 import { createPaymentFlow } from '../checkout/paymentFlow'
 import { brickVariables } from '../checkout/brickAppearance'
 import { getReservationStatusUI } from '../api/statusMap'
+import { usePaymentConfirmation, useReservationValue } from '@/features/finance/hooks'
+import { isPaymentConfigurationError } from '../checkout/paymentOutcome'
 import styles from '../pages/pages.module.css'
 
-function BrickInstance({ publicKey, contact, onBusyChange }) {
+function BrickInstance({ publicKey, contact, amount, onPhaseChange }) {
   const navigate = useNavigate()
   const target = `payment-brick-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const { quotation, expiresAt, checkoutId, reservationId, accepted, expired } = useCheckout()
-  const developmentPayment = import.meta.env.DEV && !publicKey
-  const flowRef = useRef(null)
+  const { expiresAt, checkoutId, reservationId, accepted, beginPayment } = useCheckout()
   const [view, setView] = useState({ status: 'loading_sdk', message: '', evidence: null })
   const { status, message, reservationStatus } = view
   const reservationUI = reservationStatus ? getReservationStatusUI(reservationStatus) : null
@@ -23,10 +24,10 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
   useEffect(() => {
     let session
     const flow = createPaymentFlow({
-      checkoutId, reservationId, acceptsCancellationPolicy: accepted, contact, amount: quotation.total_amount, expiresAt,
-      onChange: (next) => { setView(next); onBusyChange(next.status === 'tokenizing' || next.status === 'tokenized') },
+      checkoutId, reservationId, acceptsCancellationPolicy: accepted, contact, amount, expiresAt,
+      beforePayment: beginPayment,
+      onChange: (next) => { setView(next); onPhaseChange(next.status) },
     })
-    flowRef.current = flow
     const callbacks = {
       onReady: flow.ready,
       onError: () => flow.fail('MercadoPago no pudo completar el formulario. Revisa los datos o vuelve a cargarlo.'),
@@ -40,28 +41,23 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
     }, Math.max(0, expiresAt - Date.now()))
 
     try {
-      if (developmentPayment) {
-        flow.ready()
-      } else {
-        session = mountPaymentBrick({
-          loadSdk: loadMercadoPagoSdk, publicKey, target,
-          settings: paymentBrickSettings(quotation.total_amount, callbacks, brickVariables()),
-        })
-        session.ready.catch(() => flow.fail('No se pudo cargar el formulario de MercadoPago. Comprueba la conexión y la Public Key de pruebas.'))
-      }
+      session = mountPaymentBrick({
+        loadSdk: loadMercadoPagoSdk, publicKey, target,
+        settings: paymentBrickSettings(amount, callbacks, brickVariables()),
+      })
+      session.ready.catch(() => flow.fail('No se pudo cargar el formulario de MercadoPago. Comprueba la conexión y la Public Key de pruebas.'))
     } catch {
       flow.fail('No se pudo inicializar el formulario de MercadoPago.')
     }
 
     return () => {
       clearTimeout(expiryTimer)
-      flowRef.current = null
       flow.dispose()
-      onBusyChange(false)
+      onPhaseChange('idle')
       // Capturar errores de limpieza sin registrar datos del SDK.
       session?.dispose().catch(() => {})
     }
-  }, [publicKey, target, quotation.total_amount, expiresAt, checkoutId, reservationId, accepted, contact, onBusyChange, developmentPayment])
+  }, [publicKey, target, amount, expiresAt, checkoutId, reservationId, accepted, contact, onPhaseChange, beginPayment])
 
   useEffect(() => {
     if (status === 'tokenized' && reservationStatus === 'CONFIRMADA' && !message) {
@@ -69,31 +65,14 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
     }
   }, [status, reservationStatus, message, reservationId, navigate])
 
-  const submitDevelopmentPayment = () => {
-    if (!developmentPayment || expired || !accepted || !reservationId || !flowRef.current) return
-    return flowRef.current.submit({
-      selectedPaymentMethod: 'credit_card',
-      formData: {
-        token: 'token-test',
-        payment_method_id: 'visa',
-        installments: 1,
-        transaction_amount: quotation.total_amount,
-        payer: { email: 'payer@example.com' },
-      },
-    }, { lastFourDigits: '4242' }).catch((error) => {
-      setView((current) => ({ ...current, message: error.message }))
-    })
-  }
-
   return (
     <>
-      {!developmentPayment && <p className={styles.payNote}>Usa únicamente tarjetas y datos de prueba de Colombia.</p>}
-      {status === 'loading_sdk' && !developmentPayment && <p className={styles.state} role="status">Cargando formulario seguro…</p>}
-      {developmentPayment && <Button disabled={expired || !accepted || !reservationId || !['ready', 'error'].includes(status)} onClick={submitDevelopmentPayment}>Pago de prueba (solo desarrollo)</Button>}
+      <p className={styles.payNote}>Usa únicamente tarjetas y datos de prueba de Colombia.</p>
+      {status === 'loading_sdk' && <p className={styles.state} role="status">Cargando formulario seguro…</p>}
       {status === 'tokenizing' && <p className={styles.payNote} role="status">Consultando el pago y el estado de la reserva… No cierres este paso.</p>}
       {status === 'error' && <p className={styles.payNote} role="alert">{message}</p>}
       {status === 'expired' && <p className={styles.payNote} role="alert">{message}</p>}
-      {!developmentPayment && <div id={target} hidden={status === 'tokenized' || status === 'expired'} aria-busy={status === 'loading_sdk' || status === 'tokenizing'} />}
+      <div id={target} hidden={status === 'tokenized' || status === 'expired'} aria-busy={status === 'loading_sdk' || status === 'tokenizing'} />
       {status === 'tokenized' && <div>
         {message && <p role="alert">{message}</p>}
         {reservationStatus !== 'CONFIRMADA' && !message && <>
@@ -107,21 +86,28 @@ function BrickInstance({ publicKey, contact, onBusyChange }) {
 }
 
 export default function PaymentBrick({ contact }) {
-  const { expired, checkoutId } = useCheckout()
+  const { expired, checkoutId, reservationId, paymentStarted } = useCheckout()
   const [attempt, setAttempt] = useState(0)
-  const [busy, setBusy] = useState(false)
+  const [phase, setPhase] = useState('idle')
+  const busy = phase === 'tokenizing' || phase === 'tokenized'
   const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY?.trim()
+  const confirmation = usePaymentConfirmation(reservationId, { enabled: paymentStarted, poll: paymentStarted })
+  const value = useReservationValue(reservationId)
+  const retryRejected = !expired && phase === 'tokenized' && confirmation.data?.status === 'REJECTED' && !isPaymentConfigurationError(confirmation.data.detail)
 
   if (expired && !busy) return null
-  if (!publicKey) return <>
-    <p className={styles.payNote} role="alert" data-payment-state="configuration_error">Falta configurar VITE_MERCADOPAGO_PUBLIC_KEY con la Public Key de pruebas de una aplicación de Colombia.</p>
-    {import.meta.env.DEV && <BrickInstance key={checkoutId} publicKey={publicKey} contact={contact} onBusyChange={setBusy} />}
+  if (!publicKey) return <p className={styles.payNote} role="alert" data-payment-state="configuration_error">Falta configurar VITE_MERCADOPAGO_PUBLIC_KEY con la Public Key de pruebas de una aplicación de Colombia.</p>
+  if (value.isPending) return <p role="status">Consultando el importe final con el depósito de garantía…</p>
+  if (value.error || !value.data?.total || !(Number(value.data.total) > 0)) return <>
+    <p role="alert">No se pudo obtener el importe final del cobro. No se ha enviado ningún pago.</p>
+    <Button variant="secondary" onClick={() => value.refetch()}>Consultar importe de nuevo</Button>
   </>
 
   return (
     <>
-      <BrickInstance key={`${checkoutId}-${attempt}`} publicKey={publicKey} contact={contact} onBusyChange={setBusy} />
-      <Button variant="secondary" disabled={busy} onClick={() => setAttempt((current) => current + 1)}>Volver a cargar formulario</Button>
+      <p className={styles.payNote}>Importe del cobro: <strong>{copDecimal(value.data.total)}</strong>. Incluye alquiler, seguro y depósito de garantía.</p>
+      <BrickInstance key={`${checkoutId}-${attempt}`} publicKey={publicKey} contact={contact} amount={Number(value.data.total)} onPhaseChange={setPhase} />
+      <Button variant="secondary" disabled={busy && !retryRejected} onClick={() => setAttempt((current) => current + 1)}>{retryRejected ? 'Usar otra tarjeta' : 'Volver a cargar formulario'}</Button>
       <p className={styles.payNote}>Volver a cargar borra los datos ingresados y el token de esta prueba; no reinicia el tiempo disponible.</p>
     </>
   )

@@ -3,26 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { SlidingTabs, StatusBadge } from '@/components/ui'
 import { copMoney } from '@/lib/dates'
 import { getReservationStatusUI } from '../api/statusMap'
-import { useBoats, useReservations } from '../hooks'
+import { useReservations } from '../hooks'
+import { reservationView } from '../reservationViews'
+import { VesselPhoto } from '@/components/cards/VesselPhoto'
 import styles from './pages.module.css'
 import owner from './owner.module.css'
 
 export default function MyReservationsPage() {
   const navigate = useNavigate()
   const { data: reservations, isPending, error } = useReservations()
-  const { data: boats } = useBoats()
   const [tab, setTab] = useState('historial')
 
   const all = reservations ?? []
-  const shown = all.filter((r) => (tab === 'canceladas' ? r.status === 'CANCELADA' : true))
-  const boatName = (id) => boats?.find((b) => b.id === id)?.name ?? '…'
+  const shown = reservationView(all, tab)
 
   if (error) return <p role="alert" className={styles.state}>{error.code}: {error.message}</p>
 
   return (
     <>
       <h1 className={styles.title}>Mis reservas</h1>
-      <p className={styles.muted}>{isPending ? 'Cargando…' : `${all.length} en total`}</p>
+      <p className={styles.muted}>{isPending ? 'Cargando…' : `${shown.length} en esta vista`}</p>
       <div className={owner.tabs}>
         <SlidingTabs role="tablist" ariaLabel="Vista de reservas" value={tab} onChange={setTab} items={[{ value: 'historial', label: 'Historial' }, { value: 'canceladas', label: 'Canceladas' }]} />
       </div>
@@ -40,9 +40,9 @@ export default function MyReservationsPage() {
               tabIndex={0}
               role="link"
             >
-              <div className={owner.thumb}>FOTO</div>
+              <VesselPhoto src={r.imageUrl} name={r.boatName} className={owner.thumb} />
               <div className={owner.info}>
-                <h3>{boatName(r.boatId)}</h3>
+                <h3>{r.boatName || 'Embarcación'}</h3>
                 <p>{r.status === 'CANCELADA' ? r.duration : `${r.dates} · ${r.duration}`}</p>
                 {r.note && <p>{r.note}</p>}
               </div>

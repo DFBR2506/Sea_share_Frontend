@@ -1,3 +1,5 @@
+import { sessionIdentity } from './sessionIdentity'
+
 // Cliente HTTP por módulo: m1 = embarcaciones, m2 = reservas, m3 = finanzas.
 // Las bases por defecto son rutas del mismo origen (p. ej. `/api/m3`) que el proxy de
 // desarrollo de Vite redirige al backend correspondiente (ver vite.config.js).
@@ -10,16 +12,7 @@ const BASE_URLS = {
 // Identidad desde localStorage (seashare.*); si falta, no se manda nada.
 // M1 autentica con el JWT del login; M2 y M3 reciben la identidad en cabeceras X-User-*.
 function readIdentityHeaders(module) {
-  let userId = null
-  let role = null
-  let token = null
-  try {
-    userId = localStorage.getItem('seashare.userId')
-    role = localStorage.getItem('seashare.role')
-    token = localStorage.getItem('seashare.token')
-  } catch {
-    // sin localStorage: la petición sale sin identidad
-  }
+  const { userId, role, token } = sessionIdentity()
   const headers = {}
   if (module === 'm1') {
     if (token) headers.Authorization = `Bearer ${token}`

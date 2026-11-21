@@ -85,6 +85,15 @@ test('no restaura propiedades ajenas al contrato no sensible', () => {
   assert.deepEqual(restored, valid)
 })
 
+test('recupera la reserva real, clave y TTL sin guardar datos personales ni renovar el plazo', () => {
+  const valid = { ...createCheckout(snapshot, now), reservationId: 'reservation-id',
+    requestFingerprint: 'a'.repeat(64), departureTime: '10:00', requestStartedAt: now,
+    serverExpiresAt: now + CHECKOUT_WINDOW_MS, paymentStarted: true }
+  const restored = restoreCheckout(JSON.stringify({ ...valid, contact: { name: 'private' }, token: 'secret' }), snapshot, now + 1000)
+  assert.deepEqual(restored, valid)
+  assert.equal(restored.expiresAt, now + CHECKOUT_WINDOW_MS)
+})
+
 test('storage bloqueado no impide un checkout en memoria', () => {
   const storage = {
     getItem: () => { throw new Error('blocked') },

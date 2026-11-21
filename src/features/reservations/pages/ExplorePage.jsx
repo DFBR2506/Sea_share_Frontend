@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { BoatCard } from '@/components/cards'
 import { FilterBar } from '@/components/filters'
 import { copDecimal } from '@/lib/dates'
+import { useNow } from '@/lib/useNow'
+import { harborDateTime } from '../checkout/departure'
 import { m3ErrorMessage } from '@/features/finance/errors'
 import { useEstimateBatch } from '@/features/finance/hooks'
 import { listBoats } from '../api'
@@ -20,8 +22,9 @@ export default function ExplorePage() {
   const [datesOpen, setDatesOpen] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const today = harborDateTime(useNow()).date
   const validPassengers = passengers === '' || (Number.isInteger(Number(passengers)) && Number(passengers) > 0)
-  const validDates = !startDate || !endDate || endDate >= startDate
+  const validDates = (!startDate || startDate >= today) && (!endDate || endDate >= today) && (!startDate || !endDate || endDate >= startDate)
   const validFilters = validPassengers && validDates
   const { data: result, isPending, error } = useQuery({
     queryKey: ['m2', 'boats', 'explore', selected, passengers, startDate, endDate],
@@ -63,16 +66,16 @@ export default function ExplorePage() {
           onPassengersClick={() => setPassengersOpen((open) => !open)} />
       </div>
       {datesOpen && <div className={styles.filterPanel}>
-        <label className={styles.filterField}>Inicio <input className={styles.filterInput} aria-label="Fecha de inicio" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+        <label className={styles.filterField}>Inicio <input className={styles.filterInput} aria-label="Fecha de inicio" type="date" min={today} value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
         {' '}
-        <label className={styles.filterField}>Fin <input className={styles.filterInput} aria-label="Fecha de fin" type="date" value={endDate} min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} /></label>
+        <label className={styles.filterField}>Fin <input className={styles.filterInput} aria-label="Fecha de fin" type="date" value={endDate} min={startDate > today ? startDate : today} onChange={(event) => setEndDate(event.target.value)} /></label>
       </div>}
       {passengersOpen && <label className={styles.filterPanel + ' ' + styles.filterField}>Pasajeros
         <input className={styles.filterInput} aria-label="Pasajeros" type="number" min="1" step="1" value={passengers}
           onChange={(event) => setPassengers(event.target.value)} />
       </label>}
       {!validPassengers && <p role="alert" className={styles.state}>Elige una cantidad entera de pasajeros mayor que cero.</p>}
-      {!validDates && <p role="alert" className={styles.state}>La fecha de fin no puede ser anterior a la de inicio.</p>}
+      {!validDates && <p role="alert" className={styles.state}>Elige fechas desde hoy y una fecha de fin igual o posterior al inicio.</p>}
       {error && <p role="alert" className={styles.state}>{error.message}</p>}
       {validFilters && !error && !isPending && visible.length === 0 && <p className={styles.state}>No hay embarcaciones con esos filtros.</p>}
       {estimatesFailed && <p className={styles.state} role="alert">No se pudieron obtener las estimaciones de precio: {m3ErrorMessage(estimatesError)}</p>}
@@ -81,6 +84,7 @@ export default function ExplorePage() {
           <BoatCard
             key={b.id}
             name={b.name}
+            imageUrl={b.imageUrl}
             meta={`${b.shortLocation} · ${b.passengers} pasajeros · ${b.captain ? 'Capitán incluido' : 'Sin capitán'}`}
             price={priceOf(b)}
             actionVariant="primary"

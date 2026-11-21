@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
-import boatIcon from '@/assets/icons/boat.svg'
+import { VesselPhoto } from '@/components/cards/VesselPhoto'
+import { useNow } from '@/lib/useNow'
+import { fromISO } from '@/lib/dates'
+import { harborDateTime } from '../checkout/departure'
 import { Button, DateRangeCalendar } from '@/components/ui'
 import { copDecimal, formatFull, formatRange, copMoney, inclusiveDays, toISO } from '@/lib/dates'
 import { m3ErrorMessage } from '@/features/finance/errors'
@@ -17,10 +20,11 @@ export default function BoatDetailPage() {
   const navigate = useNavigate()
   const { data: boat, isPending, error } = useBoat(boatId)
   const [range, setRange] = useState({ start: null, end: null })
-  const [pax, setPax] = useState(null)
+  const [pax, setPax] = useState(1)
   const startDate = range.start ? toISO(range.start) : ''
   const endDate = range.end ? toISO(range.end) : ''
-  const ready = Boolean(startDate && endDate && Number.isInteger(pax) && pax > 0 && pax <= boat?.passengers)
+  const today = harborDateTime(useNow(), boat?.timezone).date
+  const ready = Boolean(startDate && endDate && startDate >= today && endDate >= startDate && Number.isInteger(pax) && pax > 0 && pax <= boat?.passengers)
   const { data: quotation, error: quotationError, isFetching } = useQuery({
     queryKey: ['m2', 'quotation', boatId, startDate, endDate, pax],
     queryFn: () => getQuotation(boatId, startDate, endDate, pax),
@@ -44,6 +48,7 @@ export default function BoatDetailPage() {
   const rangeLabel = days ? formatRange(range.start, range.end) : ''
 
   const goToPayment = () => {
+    if (!ready || startDate < harborDateTime(Date.now(), boat.timezone).date) return
     try { clearExpiredCheckout(window.sessionStorage) } catch { /* Storage bloqueado. */ }
     const q = new URLSearchParams({ start: toISO(range.start), end: toISO(range.end), pax: String(pax) })
     navigate(`/explorar/${boat.id}/pago?${q}`)
@@ -57,10 +62,10 @@ export default function BoatDetailPage() {
       <button type="button" className={styles.back} onClick={() => navigate('/explorar')}>‹ Volver a resultados</button>
       <div className={styles.detail}>
         <div>
-          <div className={styles.photo} role="img" aria-label="Foto del barco"><img src={boatIcon} alt="" width="36" height="36" /><span>Sin fotos disponibles</span></div>
+          <VesselPhoto src={boat.imageUrl} name={boat.name} />
           <h2 className={styles.h2}>Elige la fecha de tu viaje</h2>
           <p className={styles.hint}>Toca una fecha de inicio y luego una de fin para reservar varios días</p>
-          <DateRangeCalendar value={range} onChange={setRange} />
+          <DateRangeCalendar value={range} onChange={setRange} minDate={fromISO(today)} />
           <div className={styles.dates}>
             <div className={styles.dateBox}><span className={styles.dateIcon} /><div><small>Fecha de inicio</small><strong>{range.start ? formatFull(range.start) : '—'}</strong></div></div>
             <div className={styles.dateBox}><span className={styles.dateIcon} /><div><small>Fecha de fin</small><strong>{range.end ? formatFull(range.end) : '—'}</strong></div></div>
@@ -94,9 +99,9 @@ export default function BoatDetailPage() {
             <div className={styles.paxRow}>
               <div><strong>Pasajeros</strong><span className={styles.muted}>Máx. {boat.passengers} personas</span></div>
               <div className={styles.stepper}>
-                <button type="button" aria-label="Menos pasajeros" disabled={pax == null || pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
-                <span>{pax ?? '—'}</span>
-                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax((pax ?? 0) + 1)}>+</button>
+                <button type="button" aria-label="Menos pasajeros" disabled={pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
+                <span>{pax}</span>
+                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax(pax + 1)}>+</button>
               </div>
             </div>
             {days > 0 && (

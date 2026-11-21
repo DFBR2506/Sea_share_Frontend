@@ -24,6 +24,8 @@ export default defineConfig({
       // Sobrescribir .env y .env.local: jamás usar credenciales reales en E2E.
       VITE_MERCADOPAGO_PUBLIC_KEY: 'TEST-e2e-public-key',
       VITE_API_M1_URL: '/api/m1', VITE_API_M2_URL: '/api/m2', VITE_API_M3_URL: '/api/m3',
+      // Si falta un stub, fallar localmente: nunca reenviar una mutación a producción.
+      M1_PROXY_TARGET: 'http://127.0.0.1:9', M2_PROXY_TARGET: 'http://127.0.0.1:9', M3_PROXY_TARGET: 'http://127.0.0.1:9',
     },
   },
 })

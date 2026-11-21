@@ -19,6 +19,13 @@ export function restoreCheckout(raw, snapshot, now = Date.now()) {
     return {
       version: 1, id: saved.id, createdAt: saved.createdAt,
       expiresAt: saved.expiresAt, accepted: saved.accepted, snapshot,
+      reservationId: typeof saved.reservationId === 'string' ? saved.reservationId : null,
+      idempotencyKey: typeof saved.idempotencyKey === 'string' ? saved.idempotencyKey : saved.id,
+      requestFingerprint: /^[a-f0-9]{64}$/.test(saved.requestFingerprint ?? '') ? saved.requestFingerprint : null,
+      requestStartedAt: Number.isFinite(saved.requestStartedAt) ? saved.requestStartedAt : null,
+      departureTime: /^([01]\d|2[0-3]):[0-5]\d$/.test(saved.departureTime ?? '') ? saved.departureTime : '',
+      serverExpiresAt: Number.isFinite(saved.serverExpiresAt) ? saved.serverExpiresAt : null,
+      paymentStarted: saved.paymentStarted === true,
     }
   } catch {
     return null
@@ -33,6 +40,8 @@ export function createCheckout(snapshot, now = Date.now()) {
     expiresAt: now + CHECKOUT_WINDOW_MS,
     accepted: false,
     snapshot,
+    reservationId: null, idempotencyKey: crypto.randomUUID(), requestFingerprint: null,
+    requestStartedAt: null, departureTime: '', serverExpiresAt: null, paymentStarted: false,
   }
 }
 

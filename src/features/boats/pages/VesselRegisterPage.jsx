@@ -8,7 +8,9 @@ import { MANDATORY_SERVICES, SERVICE_OPTIONS } from '../constants'
 import { clearProgress, currentUserId, loadProgress, saveProgress } from '../draftProgress'
 import { formatCoordinate } from '../format'
 import { useBoatTypes, useCheckPlate, useCompleteRegistration, useCreateDraft, useDeleteDraft, useDraft } from '../hooks'
-import { capacityError, legalRegistrationError, MESSAGES, nameError, normalizeName, photoError, portNameError, rateError } from '../validation'
+import { capacityError, legalRegistrationError, MESSAGES, nameError, normalizeName, portNameError, rateError } from '../validation'
+import { usePhotoUpload } from '../usePhotoUpload'
+import { photoSaveMessage } from '../photoUpload'
 import styles from './pages.module.css'
 
 const STEPS = [{ label: 'Datos Básicos' }, { label: 'Datos Complementarios' }]
@@ -30,8 +32,7 @@ function RegisterForm({ draft }) {
   const direction = useStepDirection(step)
   const [touched, setTouched] = useState(false)
   const [cancelling, setCancelling] = useState(false)
-  const [photo, setPhoto] = useState(null)
-  const [photoProblem, setPhotoProblem] = useState(null)
+  const { photo, photoProblem, photoBusy, photoPreview, pickPhoto } = usePhotoUpload()
   const [plateTaken, setPlateTaken] = useState(false)
   const [form, setForm] = useState({
     name: draft?.name ?? '',
@@ -65,15 +66,10 @@ function RegisterForm({ draft }) {
     portName: portNameError(form.portName),
     point: form.point ? null : MESSAGES.coordinatesRequired,
     hourlyRate: rateError(form.hourlyRate),
-    photo: photo ? photoProblem : MESSAGES.photoRequired,
+    photo: photoProblem || (photo ? null : MESSAGES.photoRequired),
   }
   const server = (field) => (createDraft.error ?? complete.error)?.fieldError?.(field)
   const show = (key, errors) => (touched && errors[key]) || undefined
-
-  const pickPhoto = async (file) => {
-    setPhoto(file)
-    setPhotoProblem(file ? await photoError(file) : null)
-  }
 
   const next = () => {
     setTouched(true)
@@ -100,6 +96,7 @@ function RegisterForm({ draft }) {
   }
 
   const save = () => {
+    if (photoBusy || complete.isPending) return
     setTouched(true)
     if (Object.values(errors2).some(Boolean)) return
     complete.mutate(
@@ -162,14 +159,16 @@ function RegisterForm({ draft }) {
                   </div>
                 </div>
               </div>
-              <Input caps label="Tarifa base (por hora en COP)" placeholder="Ej. 180000" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate', errors2) || server('base_rate')} />
+              <Input caps label="Tarifa base (por día en COP)" placeholder="Ej. 180000" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate', errors2) || server('base_rate')} />
               <div>
                 <p className={styles.sectionLabel}>Fotografía oficial</p>
                 <label className={styles.drop}>
                   + Adjuntar imagen de la embarcación
-                  <small>{photo?.name || 'PNG, JPG hasta 10 MB'}</small>
-                  <input type="file" accept="image/png,image/jpeg" onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)} />
+                  <small>{photoBusy ? 'Preparando fotografía…' : photo?.name || 'PNG, JPG o JPEG hasta 10 MB'}</small>
+                  <input type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" disabled={complete.isPending} onChange={(e) => { complete.reset(); pickPhoto(e.target.files?.[0] ?? null) }} />
                 </label>
+                {photoPreview && <img className={styles.uploadPreview} src={photoPreview} alt="Vista previa de la fotografía seleccionada" />}
+                <small>Las fotografías pesadas se optimizan automáticamente antes del envío.</small>
                 {(photoProblem || show('photo', errors2) || server('photo')) && (
                   <span role="alert" className={styles.fieldError}>{photoProblem || errors2.photo || server('photo')}</span>
                 )}
@@ -192,13 +191,13 @@ function RegisterForm({ draft }) {
         )}
         </StepContent>
 
-        {requestError && <p role="alert" className={styles.formError}>{requestError.message}</p>}
+        {requestError && <p role="alert" className={styles.formError}>{photoSaveMessage(requestError)}</p>}
         <div className={styles.footerBar}>
           <Button variant="soft" square onClick={() => setCancelling(true)}>Cancelar</Button>
           {step === 2 && <Button variant="outline" square onClick={() => { setTouched(false); setStep(1) }}>Atrás</Button>}
           {step === 1
             ? <Button square onClick={next} disabled={busy}>{busy ? 'Validando…' : 'Siguiente →'}</Button>
-            : <Button square onClick={save} disabled={complete.isPending}>{complete.isPending ? 'Guardando…' : 'Guardar Registro'}</Button>}
+            : <Button square onClick={save} disabled={complete.isPending || photoBusy}>{photoBusy ? 'Preparando imagen…' : complete.isPending ? 'Guardando…' : 'Guardar Registro'}</Button>}
         </div>
       </PageCard>
 
@@ -271,13 +270,23 @@ function DraftDecision({ draft, onContinue, onRestart }) {
   )
 }
 
+function RegistrationSession({ initialDraft }) {
+  // Solo el borrador encontrado al entrar requiere una decisión, no el creado en esta visita.
+  const [draft] = useState(initialDraft)
+  const [decision, setDecision] = useState(initialDraft ? null : 'new')
+
+  if (draft && decision === null) {
+    return <DraftDecision draft={draft} onContinue={() => setDecision('continue')} onRestart={() => setDecision('new')} />
+  }
+  return <RegisterForm key={decision} draft={decision === 'continue' ? draft : null} />
+}
+
 // Si quedó un borrador del paso 1 se pregunta antes: retomarlo o descartarlo y empezar de cero.
 export default function VesselRegisterPage() {
   const { data: draft, isPending, error, refetch } = useDraft()
-  const [decision, setDecision] = useState(null) // null = sin decidir | 'continue' | 'new'
 
   if (isPending) return <p>Cargando…</p>
-  if (error) {
+  if (error && draft === undefined) {
     return (
       <PageCard maxWidth={520}>
         <PageCardHead title="No se pudo cargar el registro pendiente" subtitle="Verifica tu conexión a internet e inténtalo nuevamente." />
@@ -285,8 +294,5 @@ export default function VesselRegisterPage() {
       </PageCard>
     )
   }
-  if (draft && decision === null) {
-    return <DraftDecision draft={draft} onContinue={() => setDecision('continue')} onRestart={() => setDecision('new')} />
-  }
-  return <RegisterForm key={decision ?? 'fresh'} draft={decision === 'new' ? null : (draft ?? null)} />
+  return <RegistrationSession initialDraft={draft} />
 }

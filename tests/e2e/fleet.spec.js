@@ -25,14 +25,24 @@ const NOTIFICATIONS = {
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
 async function stubM1(page, { role = 'OWNER', draft = null } = {}) {
+  const state = { draft, draftCreates: 0, draftReads: 0 }
   await page.route('**/api/m1/**', (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace('/api/m1/api/v1', '')
     if (path === '/notifications') return route.fulfill(json(NOTIFICATIONS))
     if (path === '/fleet/boats') return route.fulfill(json({ boats: [BOAT, BOAT2] }))
     if (path === '/fleet/boats/draft') {
-      if (route.request().method() === 'POST') return route.fulfill(json({ boat_id: 'draft-1', name: 'Río Magdalena III', legal_registration: 'CP-05-7788-D', type: 'MOTORBOAT', max_capacity: 8 }))
-      return draft ? route.fulfill(json(draft)) : route.fulfill(json({ detail: 'sin borrador' }, 404))
+      if (route.request().method() === 'POST') {
+        state.draftCreates += 1
+        state.draft = { boat_id: 'draft-1', ...route.request().postDataJSON() }
+        return route.fulfill(json(state.draft))
+      }
+      if (route.request().method() === 'DELETE') {
+        state.draft = null
+        return route.fulfill({ status: 204 })
+      }
+      state.draftReads += 1
+      return state.draft ? route.fulfill(json(state.draft)) : route.fulfill(json({ detail: 'sin borrador' }, 404))
     }
     if (path === '/fleet/boats/legal-registration-availability') return route.fulfill(json({ available: true }))
     if (path === '/fleet/boat-types') return route.fulfill(json({ types: [
@@ -50,6 +60,7 @@ async function stubM1(page, { role = 'OWNER', draft = null } = {}) {
     localStorage.setItem('seashare.userId', 'o1')
     localStorage.setItem('seashare.token', 'token-de-prueba')
   }, role)
+  return state
 }
 
 // El 404 del borrador inexistente es parte del flujo (getDraft lo captura): no es un fallo.
@@ -81,6 +92,7 @@ test('propietario: lista, campana y ficha con mapa', async ({ page }) => {
   await page.goto('/owner/embarcaciones/b1')
   await expect(page.getByRole('heading', { name: 'Río Magdalena II' })).toBeVisible()
   await expect(page.getByText('12 pasajeros')).toBeVisible()
+  await expect(page.getByText('Tarifa base (por día)', { exact: true })).toBeVisible()
   await expect(page.getByText('Lat: 11.2408 · Long: -74.1990')).toBeVisible()
   await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({ timeout: 20000 })
   expect(problems, problems.join('\n---\n')).toEqual([])
@@ -89,7 +101,7 @@ test('propietario: lista, campana y ficha con mapa', async ({ page }) => {
 test('propietario: registro paso 2 con mapa y validaciones', async ({ page }) => {
   const problems = []
   watch(page, problems)
-  await stubM1(page)
+  const state = await stubM1(page)
 
   await page.goto('/owner/embarcaciones/nueva')
   await page.getByLabel('Nombre de la embarcación').fill('ab')
@@ -105,6 +117,11 @@ test('propietario: registro paso 2 con mapa y validaciones', async ({ page }) =>
   await page.getByRole('button', { name: /Siguiente/ }).click()
 
   await expect(page.getByText('Paso 2 de 2:', { exact: false })).toBeVisible()
+  await expect.poll(() => state.draftReads).toBeGreaterThan(1)
+  await expect(page.getByRole('heading', { name: 'Borrador detectado' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Atrás', exact: true }).click()
+  await page.getByRole('button', { name: /Siguiente/ }).click()
+  expect(state.draftCreates).toBe(1)
   const map = page.getByRole('application', { name: /puerto de atraque/i })
   await expect(map).toBeVisible()
   await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({ timeout: 20000 })
@@ -112,8 +129,25 @@ test('propietario: registro paso 2 con mapa y validaciones', async ({ page }) =>
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   await expect(page.getByLabel('Latitud')).not.toHaveValue('')
   await page.getByLabel('Nombre del puerto').fill('Marina Fluvial Magdalena')
-  await page.getByLabel(/Tarifa base/).fill('180000')
+  await page.getByLabel('Tarifa base (por día en COP)').fill('180000')
   await page.getByLabel('Equipo de buceo').check()
+  const reads = state.draftReads
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await expect.poll(() => state.draftReads).toBeGreaterThan(reads)
+  await expect(page.getByLabel('Nombre del puerto')).toHaveValue('Marina Fluvial Magdalena')
+  await expect(page.getByLabel('Tarifa base (por día en COP)')).toHaveValue('180000')
+  await expect(page.getByLabel('Equipo de buceo')).toBeChecked()
+  await expect(page.getByRole('heading', { name: 'Borrador detectado' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: '← Volver', exact: true }).click()
+  await page.goto('/owner/embarcaciones/nueva')
+  await expect(page.getByRole('heading', { name: 'Borrador detectado' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continuar registro pendiente' }).click()
+  await expect(page.getByLabel('Nombre del puerto')).toHaveValue('Marina Fluvial Magdalena')
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Borrador detectado' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continuar registro pendiente' }).click()
+  await expect(page.getByLabel('Tarifa base (por día en COP)')).toHaveValue('180000')
   expect(problems, problems.join('\n---\n')).toEqual([])
 })
 
@@ -136,6 +170,12 @@ test('propietario: ventana de borrador detectado', async ({ page }) => {
   await page.getByRole('button', { name: 'Atrás' }).click()
   await expect(page.getByLabel('Nombre de la embarcación')).toHaveValue('Río Magdalena III')
   await expect(page.getByLabel('Nombre de la embarcación')).toBeDisabled()
+  await page.reload()
+  await page.getByRole('button', { name: 'Empezar un registro nuevo' }).click()
+  await page.getByRole('button', { name: 'Sí, eliminar y empezar' }).click()
+  await expect(page.getByLabel('Nombre de la embarcación')).toHaveValue('')
+  await expect(page.getByLabel('Nombre de la embarcación')).toBeEnabled()
+  await expect(page.getByRole('heading', { name: 'Borrador detectado' })).toHaveCount(0)
   expect(problems, problems.join('\n---\n')).toEqual([])
 })
 
@@ -146,6 +186,7 @@ test('editar: mapa precargado en el punto guardado', async ({ page }) => {
   await page.goto('/owner/embarcaciones/b1/editar')
   await expect(page.getByRole('heading', { name: 'Editar Información de Embarcación' })).toBeVisible()
   await expect(page.getByLabel('Latitud')).toHaveValue('11.2408')
+  await expect(page.getByLabel('Tarifa base (por día)')).toHaveValue('180000')
   await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1)
   await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({ timeout: 20000 })
   expect(problems, problems.join('\n---\n')).toEqual([])

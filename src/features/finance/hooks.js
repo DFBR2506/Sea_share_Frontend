@@ -34,10 +34,13 @@ export const useReservationValue = (reservationId) => useQuery({
 })
 
 // UC06 · confirmación de pago de la reserva; se actualiza con el botón de la pantalla.
-export const usePaymentConfirmation = (reservationId) => useQuery({
+export const usePaymentConfirmation = (reservationId, { enabled = true, poll = false } = {}) => useQuery({
   queryKey: ['m3', 'payment-confirmation', reservationId],
   queryFn: ({ signal }) => api.getPaymentConfirmation(reservationId, signal),
-  enabled: isUUID(reservationId),
+  enabled: enabled && isUUID(reservationId),
+  retry: false,
+  refetchInterval: (query) => poll && !['APPROVED', 'REJECTED', 'CANCELLED', 'EXPIRED'].includes(query.state.data?.status)
+    && !/gateway_configuration_error|invalid credentials/i.test(query.state.data?.detail ?? '') ? 3000 : false,
 })
 
 function useM3Mutation(fn) {

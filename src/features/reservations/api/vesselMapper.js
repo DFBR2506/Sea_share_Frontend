@@ -5,6 +5,8 @@ export function mapVessel(vessel) {
   return {
     id: vessel?.vessel_id ?? '',
     name: vessel?.name ?? '',
+    imageUrl: vessel?.photo_url?.trim() || vessel?.image_url?.trim() || '',
+    timezone: vessel?.port?.timezone || 'America/Bogota',
     type: VESSEL_TYPES[type] ?? type,
     location: vessel?.port?.name ?? '',
     shortLocation: vessel?.port?.name ?? '',

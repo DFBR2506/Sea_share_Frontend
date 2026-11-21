@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import boatIcon from '@/assets/icons/boat.svg'
+import { VesselPhoto } from '@/components/cards/VesselPhoto'
+import { useNow } from '@/lib/useNow'
+import { canRegisterClaim, DAMAGE_CATEGORIES, disputeDate, isEvidenceUrl } from '../disputes'
+import { EndNavigationModal } from '../components/EndNavigationModal'
 import { Button, StatusBadge } from '@/components/ui'
 import { cx } from '@/lib/cx'
 import { formatMinSec, useCountdown } from '@/lib/useCountdown'
@@ -12,17 +15,6 @@ import { HostCancelModal } from '../components/HostCancelModal'
 import { useCancelByHost, useEndNavigation, useMarkNoShow, useOwnerReservation, useStartNavigation, useSubmitClaim } from '../hooks'
 import base from './pages.module.css'
 import styles from './owner.module.css'
-
-// Aún no hay fotos del barco: estado vacío en los tres espacios de la galería
-function Gallery() {
-  return (
-    <div className={styles.gallery} aria-label="Fotos del barco">
-      <div className={styles.empty}><img src={boatIcon} alt="" width="28" height="28" /><span>Sin fotos disponibles</span></div>
-      <div className={styles.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
-      <div className={styles.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
-    </div>
-  )
-}
 
 function Tiles({ items }) {
   return (
@@ -72,13 +64,16 @@ export default function OwnerReservationDetailPage() {
   const cancel = useCancelByHost()
   const claim = useSubmitClaim()
   const claimPending = useRef(false)
+  const endPending = useRef(false)
+  const now = useNow(1000)
   const [modal, setModal] = useState(null) // 'cancel' | 'claim'
   const { data: disputes, isPending: disputesPending, isFetching: disputesFetching, error: disputesError } = useQuery({
     queryKey: ['m2', 'disputes', 'reservation', reservationId],
     queryFn: ({ signal }) => listDisputes({ reservationId, signal }),
-    enabled: r?.status === 'COMPLETADA', retry: false,
+    enabled: r?.status === 'COMPLETADA', retry: false, refetchInterval: 15000,
   })
   const dispute = disputes?.find((item) => item.reservationId === reservationId)
+  const canClaim = canRegisterClaim(dispute, now)
   const claimResponse = claim.data?.reservation_id === reservationId ? claim.data : null
   const currentClaim = dispute?.claimData ?? claimResponse?.claim
   const disputeStatus = dispute?.status ?? claimResponse?.status
@@ -90,7 +85,7 @@ export default function OwnerReservationDetailPage() {
 
   const ui = getReservationStatusUI(r.status)
   const busy = start.isPending || end.isPending || noShow.isPending
-  const cancelable = r.status === 'CONFIRMADA' || r.status === 'PENDIENTE_PAGO'
+  const cancelable = r.status === 'CONFIRMADA'
   const tilesBase = [[r.embark, 'HORA ACORDADA'], [boat.shortLocation, 'PUERTO DE ZARPE'], [String(r.pax), 'PASAJEROS']]
 
   let status
@@ -143,7 +138,7 @@ export default function OwnerReservationDetailPage() {
           <h2 className={styles.bannerTitle}>El viaje está en curso</h2>
           <p className={styles.small}><strong>Regreso pactado: {r.disembark} (hora del puerto de {boat.shortLocation})</strong> · Hora de salida real: <strong>{r.realDeparture}</strong></p>
         </div>
-        <Button className={styles.dark} onClick={() => end.mutate(r.id)} disabled={busy}>Marcar fin de la navegación</Button>
+        <Button className={styles.dark} disabled={busy || end.isPending} onClick={() => { end.reset(); setModal('end') }}>Marcar fin de la navegación</Button>
       </div>
     )
   } else if (r.status === 'COMPLETADA') {
@@ -152,16 +147,16 @@ export default function OwnerReservationDetailPage() {
         <span style={{ fontSize: 16, color: 'var(--seashare-color-brand-primary)' }}>{claimStatus}</span>
         <div>
           <h2 className={styles.bannerTitle}>{disputeStatus === 'PENDING' ? 'Tu reclamo está en revisión' : claimStatus}</h2>
-          <p className={styles.small}>Enviado el {currentClaim.registered_at ?? '—'}.</p>
+          <p className={styles.small}>Enviado el {disputeDate(currentClaim.registered_at)}.</p>
         </div>
       </div>
     ) : (
       <div className={cx(styles.banner, styles.bannerGrey)}>
         <div>
           <h2 className={styles.bannerTitle}>Viaje completado</h2>
-          <p className={styles.small}>¿Hubo algún daño o incumplimiento? Puedes reportar un reclamo sobre el depósito.</p>
+          <p className={styles.small}>{canClaim ? `Puedes reportar un reclamo hasta el ${disputeDate(dispute.windowEnd)} (hora de Colombia).` : dispute ? 'La ventana para reportar un reclamo está cerrada.' : 'Consultando la ventana de garantía abierta al finalizar el viaje.'}</p>
         </div>
-        <Button variant="secondary" disabled={!dispute?.id || disputesFetching || Boolean(disputesError)} onClick={() => { claim.reset(); setModal('claim') }}>Reportar reclamo</Button>
+        <Button variant="secondary" disabled={!canClaim || disputesFetching || Boolean(disputesError)} onClick={() => { claim.reset(); setModal('claim') }}>Reportar reclamo</Button>
       </div>
     )
   } else if (r.status === 'CANCELADA') {
@@ -199,7 +194,7 @@ export default function OwnerReservationDetailPage() {
       {status}
       {r.status === 'COMPLETADA' && disputesPending && !disputesError && <p role="status">Cargando…</p>}
       {disputesError && <p role="alert" className={base.state}>{disputesError.message}</p>}
-      {r.status === 'COMPLETADA' && !disputesPending && !disputesError && !dispute && <p className={base.muted}>Disputa: —</p>}
+      {r.status === 'COMPLETADA' && !disputesPending && !disputesError && !dispute && <p className={base.muted}>Esta reserva no tiene una ventana de garantía registrada. No se puede crear un reclamo manualmente sin ella.</p>}
       {claimResponse && <p role="status">{claimResponse.message}</p>}
       {(start.error || end.error || noShow.error || cancel.error) && <p role="alert" className={base.state}>
         {(start.error || end.error || noShow.error || cancel.error).code}: {(start.error || end.error || noShow.error || cancel.error).message}
@@ -207,7 +202,7 @@ export default function OwnerReservationDetailPage() {
 
       <div className={styles.cols}>
         <div>
-          <Gallery />
+          <VesselPhoto src={boat.imageUrl} name={boat.name} />
           <section className={cx(base.panel, styles.sheet)}>
             <h2>Itinerario</h2>
             <div className={base.lines}>
@@ -218,7 +213,9 @@ export default function OwnerReservationDetailPage() {
             <section className={cx(base.panel, styles.sheet)}>
               <h2>Tu reclamo</h2>
               <p className={styles.claimText}>“{currentClaim.description ?? '—'}”</p>
-              <p className={base.muted} style={{ marginTop: 8 }}>Registrado el {currentClaim.registered_at ?? '—'}. Este texto es tu reclamo formal.</p>
+              <p className={base.muted} style={{ marginTop: 8 }}>Registrado el {disputeDate(currentClaim.registered_at)}. Este texto es tu reclamo formal.</p>
+              <p>{DAMAGE_CATEGORIES.find(({ value }) => value === currentClaim.damage_category)?.label ?? 'Sin categoría'}</p>
+              {(currentClaim.evidence_urls ?? []).filter(isEvidenceUrl).map((url, index) => <p key={url}><a href={url} target="_blank" rel="noopener noreferrer">Ver evidencia {index + 1}</a></p>)}
             </section>
           )}
         </div>
@@ -262,12 +259,20 @@ export default function OwnerReservationDetailPage() {
         loading={claim.isPending}
         error={claim.error}
         response={claimResponse}
-        onSubmit={(text) => {
-          if (!dispute?.id || claimPending.current) return
+        onSubmit={(data) => {
+          if (!canRegisterClaim(dispute) || claimPending.current) return
           claimPending.current = true
-          claim.mutate({ id: dispute.id, text }, { onSettled: () => { claimPending.current = false } })
+          claim.mutate({ id: dispute.id, ...data }, { onSettled: () => { claimPending.current = false } })
         }}
       />
+      <EndNavigationModal key={`end-${modal === 'end'}`} open={modal === 'end'} onClose={() => setModal(null)}
+        loading={end.isPending} error={end.error} onConfirm={(remarks) => {
+          if (endPending.current) return
+          endPending.current = true
+          end.mutate({ id: r.id, remarks }, {
+            onSuccess: () => setModal(null), onSettled: () => { endPending.current = false },
+          })
+        }} />
     </>
   )
 }
