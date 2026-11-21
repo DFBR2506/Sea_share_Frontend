@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/m1/:path*", "destination": "http://3.137.153.148:8081/:path*" },
+    { "source": "/api/m1/:path*", "destination": "https://sebastianalcendra.tech/:path*" },
     { "source": "/api/m2/:path*", "destination": "https://seashare-modulo-2.onrender.com/:path*" },
     { "source": "/api/m3/:path*", "destination": "https://seashare-modulo-3.onrender.com/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
