@@ -4,27 +4,43 @@ import { BackButton, PageCard, PageCardHead } from '@/components/layout'
 import { ConfirmDialog } from '@/components/modals'
 import trashIcon from '@/assets/icons/trash.svg'
 import wrenchIcon from '@/assets/icons/wrench.svg'
-import { Button, SlideButton, StatusPill, Textarea } from '@/components/ui'
+import { Button, Input, SlideButton, StatusPill, Textarea } from '@/components/ui'
 import { VesselDetailView } from '../components/VesselDetailView'
-import { STATUS_UI } from '../api/mocks'
-import { useDeleteVessel, useSetMaintenance, useVessel } from '../hooks'
+import { STATUS_UI } from '../constants'
+import { useDeleteVessel, useRequestReview, useSetMaintenance, useVessel } from '../hooks'
+
+// <input type=datetime-local> → ISO-8601 con zona, como pide M1.
+const toIso = (local) => (local ? new Date(local).toISOString() : '')
+const nowLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 
 /** Detalle de embarcación. mode = 'owner' (con Editar) | 'admin'. */
 export default function VesselDetailPage({ mode }) {
   const { vesselId } = useParams()
   const navigate = useNavigate()
-  const { data: vessel, isPending } = useVessel(vesselId)
+  const admin = mode === 'admin'
+  const { data: vessel, isPending, error } = useVessel(vesselId, { admin })
   const maintenance = useSetMaintenance()
+  const review = useRequestReview()
   const remove = useDeleteVessel()
   const [dialog, setDialog] = useState(null) // 'maintenance' | 'delete'
   const [reason, setReason] = useState('')
+  const [start, setStart] = useState('')
+  const [until, setUntil] = useState('')
 
   const base = mode === 'owner' ? '/owner/embarcaciones' : '/admin'
   if (isPending) return <p>Cargando…</p>
+  if (error && error.status !== 404) return <PageCard><p role="alert">{error.message}</p></PageCard>
   if (!vessel) return <PageCard><p>No encontramos esta embarcación.</p></PageCard>
 
   const inMaintenance = vessel.status === 'MANTENIMIENTO'
-  const ui = STATUS_UI[vessel.status]
+  const ui = STATUS_UI[vessel.status] ?? { label: vessel.status }
+  // El propietario no puede terminar un mantenimiento que inició el administrador: solo pedir revisión.
+  const lockedByAdmin = inMaintenance && !admin && vessel.maintenanceBy === 'ADMIN'
+  const mutationError = maintenance.error ?? review.error ?? remove.error
+  const startMaintenance = () => maintenance.mutate(
+    { id: vessel.id, on: true, admin, reason: reason.trim(), start: toIso(start), until: toIso(until) },
+    { onSuccess: () => setDialog(null) },
+  )
 
   return (
     <>
@@ -36,11 +52,14 @@ export default function VesselDetailPage({ mode }) {
           actions={
             <>
               {mode === 'owner' && <Button variant="outline" square onClick={() => navigate(`${base}/${vessel.id}/editar`)}>Editar</Button>}
-              <SlideButton icon={wrenchIcon} tone="warning" onClick={() => { setReason(''); setDialog('maintenance') }}>{inMaintenance ? 'Terminar mantenimiento' : 'Enviar a Mantenimiento'}</SlideButton>
-              <SlideButton icon={trashIcon} tone="danger" onClick={() => setDialog('delete')}>Eliminar</SlideButton>
+              {lockedByAdmin
+                ? <Button variant="outline" square disabled={vessel.reviewRequested || review.isPending} onClick={() => review.mutate(vessel.id)}>{vessel.reviewRequested ? 'Revisión solicitada' : 'Solicitar revisión'}</Button>
+                : <SlideButton icon={wrenchIcon} tone="warning" onClick={() => { setReason(''); setStart(nowLocal()); setUntil(''); maintenance.reset(); setDialog('maintenance') }}>{inMaintenance ? 'Terminar mantenimiento' : 'Enviar a Mantenimiento'}</SlideButton>}
+              <SlideButton icon={trashIcon} tone="danger" onClick={() => { setReason(''); remove.reset(); setDialog('delete') }}>Eliminar</SlideButton>
             </>
           }
         />
+        {mutationError && dialog === null && <p role="alert" style={{ color: 'var(--seashare-color-brand-accent)', fontSize: 12 }}>{mutationError.message}</p>}
         <VesselDetailView
           vessel={vessel}
           servicesNote={mode === 'owner' ? 'Servicios base obligatorios y equipamiento adicional seleccionado para el alquiler' : 'Servicios base obligatorios y equipamiento adicional configurado por el propietario'}
@@ -55,13 +74,19 @@ export default function VesselDetailPage({ mode }) {
         cancelLabel="Cancelar"
         confirmLabel={inMaintenance ? 'Sí, terminar' : 'Sí, enviar'}
         loading={maintenance.isPending}
-        confirmDisabled={!inMaintenance && !reason.trim()}
-        onConfirm={() => maintenance.mutate({ id: vessel.id, on: !inMaintenance, reason: reason.trim() }, { onSuccess: () => setDialog(null) })}
+        confirmDisabled={!inMaintenance && (!until || (admin && !reason.trim()))}
+        onConfirm={() => inMaintenance ? maintenance.mutate({ id: vessel.id, on: false, admin }, { onSuccess: () => setDialog(null) }) : startMaintenance()}
       >
         <span style={{ fontSize: 12 }}>
           {inMaintenance ? 'La embarcación volverá a recibir reservas.' : 'La embarcación no recibirá reservas temporalmente.'}
         </span>
         {!inMaintenance && (
+          <>
+            <Input label="Inicio del mantenimiento" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+            <Input label="Fin del mantenimiento" type="datetime-local" value={until} min={start || undefined} onChange={(e) => setUntil(e.target.value)} />
+          </>
+        )}
+        {!inMaintenance && admin && (
           <Textarea
             label="Razón del mantenimiento"
             placeholder="Ej. Revisión del motor, pintura del casco…"
@@ -71,6 +96,7 @@ export default function VesselDetailPage({ mode }) {
             onChange={(e) => setReason(e.target.value)}
           />
         )}
+        {maintenance.error && <span role="alert" style={{ fontSize: 12, color: 'var(--seashare-color-brand-accent)' }}>{maintenance.error.message}</span>}
       </ConfirmDialog>
 
       <ConfirmDialog
@@ -80,10 +106,13 @@ export default function VesselDetailPage({ mode }) {
         cancelLabel="Conservar"
         confirmLabel="Sí, eliminar"
         loading={remove.isPending}
-        onConfirm={() => remove.mutate(vessel.id, { onSuccess: () => navigate(base, { replace: true }) })}
+        confirmDisabled={admin && !reason.trim()}
+        onConfirm={() => remove.mutate({ id: vessel.id, admin, reason: reason.trim() }, { onSuccess: () => navigate(base, { replace: true }) })}
       >
         <span style={{ fontSize: 12 }}>Esta acción eliminará el registro de forma permanente y liberará su matrícula asociada en el sistema.</span>
         <strong style={{ fontSize: 11, color: 'var(--seashare-color-brand-accent)' }}>Esta acción no se puede deshacer.</strong>
+        {admin && <Textarea label="Motivo de la eliminación (se le informa al propietario)" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />}
+        {remove.error && <span role="alert" style={{ fontSize: 12, color: 'var(--seashare-color-brand-accent)' }}>{remove.error.message}</span>}
       </ConfirmDialog>
     </>
   )

@@ -3,7 +3,7 @@ import { Dropdown, Input, Pagination } from '@/components/ui'
 import { FilterChips } from '../components/FilterChips'
 import { RecordsTable } from '../components/RecordsTable'
 import { isUUID } from '@/lib/uuid'
-import { OWNER_ID, TYPE_LABEL } from '../api'
+import { currentOwnerId, TYPE_LABEL } from '../api'
 import { m3ErrorMessage } from '../errors'
 import { useRecords } from '../hooks'
 import styles from '../components/FinanceUI.module.css'
@@ -50,7 +50,7 @@ export default function FinanceRecordsPage({ scope }) {
       <div className={`${styles.panel} ${styles.panelRow}`}>
         <div style={{ width: 240 }}>
           {scope === 'owner'
-            ? <Input label="owner_id" value={OWNER_ID} readOnly />
+            ? <Input label="owner_id" value={currentOwnerId()} readOnly />
             : <Input label="owner_id (opcional)" placeholder="UUID del propietario" value={ownerId} onChange={(e) => resetPage(setOwnerId)(e.target.value)} error={ownerId.trim() !== '' && !ownerOk && UUID_HINT} />}
         </div>
         <div style={{ width: 200 }}>

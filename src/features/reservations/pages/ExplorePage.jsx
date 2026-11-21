@@ -6,7 +6,7 @@ import { FilterBar } from '@/components/filters'
 import { copDecimal } from '@/lib/dates'
 import { m3ErrorMessage } from '@/features/finance/errors'
 import { useEstimateBatch } from '@/features/finance/hooks'
-import { listBoats, boatUuid } from '../api'
+import { listBoats } from '../api'
 import styles from './pages.module.css'
 
 const TYPES = [{ value: 'velero', label: 'Velero' }, { value: 'yate', label: 'Yate' }, { value: 'catamaran', label: 'Catamarán' }]
@@ -42,13 +42,12 @@ export default function ExplorePage() {
   const toggle = (v) => setSelected((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]))
 
   // UC01: estimacion por lote para hoy con 1 dia, 1 pasajero y seguro.
-  // Usa el UUID de Flota si existe o el ID de la embarcacion.
-  const boatIds = [...new Set(visible.map((b) => boatUuid(b.id) ?? b.id).filter(Boolean))]
+  // El id de la embarcación es el UUID de Flota (M1) que M3 también usa.
+  const boatIds = [...new Set(visible.map((b) => b.id).filter(Boolean))]
   const { data: batch, isError: estimatesFailed, error: estimatesError } = useEstimateBatch(boatIds)
 
   const priceOf = (boat) => {
-    const uuid = boatUuid(boat.id) ?? boat.id
-    const total = batch?.amounts[uuid]
+    const total = batch?.amounts[boat.id]
     if (total != null) return `≈ ${copDecimal(total)} · 1 día · 1 pasajero`
     if (estimatesFailed || batch) return 'Precio no disponible'
     return 'Consultando…'

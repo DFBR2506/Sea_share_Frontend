@@ -5,7 +5,6 @@ import { mapReservationStatus } from './statusMap'
 
 // Capa de acceso a datos del modulo 2 que habla con M2 real.
 // Las estimaciones reales de precio (M3) se acceden desde features/finance.
-export { boatUuid } from './boatUuids'
 
 export const listBoats = async ({ passengers, type, startDate, endDate, includePagination = false, signal } = {}) => {
   const vessels = []

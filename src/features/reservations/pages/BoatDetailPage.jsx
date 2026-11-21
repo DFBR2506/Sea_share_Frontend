@@ -8,7 +8,7 @@ import { copDecimal, formatFull, formatRange, copMoney, inclusiveDays, toISO } f
 import { m3ErrorMessage } from '@/features/finance/errors'
 import { useEstimate } from '@/features/finance/hooks'
 import { useBoat } from '../hooks'
-import { boatUuid, getQuotation } from '../api'
+import { getQuotation } from '../api'
 import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
 
@@ -28,11 +28,10 @@ export default function BoatDetailPage() {
   })
 
   const days = range.start && range.end ? inclusiveDays(range.start, range.end) : 0
-  const estimateBoatId = boatUuid(boatId) ?? boatId
   // UC02 · estimación real de M3: la clave del query cambia con la selección, así la respuesta
   // de una selección anterior se descarta y la petición en curso se aborta con su señal.
   const estimate = useEstimate({
-    boatId: estimateBoatId,
+    boatId,
     startDate: days ? toISO(range.start) : '',
     endDate: days ? toISO(range.end) : '',
     passengers: pax,
@@ -51,7 +50,7 @@ export default function BoatDetailPage() {
   }
 
   // Sin UUID en el stub de Flota la consulta queda desactivada (isPending eterno en v5): no hay estimación.
-  const estimateTotal = !estimateBoatId ? 'No disponible' : estimate.isPending ? 'Calculando…' : estimate.data ? copDecimal(estimate.data.total) : 'No disponible'
+  const estimateTotal = !boatId ? 'No disponible' : estimate.isPending ? 'Calculando…' : estimate.data ? copDecimal(estimate.data.total) : 'No disponible'
 
   return (
     <>

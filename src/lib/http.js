@@ -7,17 +7,24 @@ const BASE_URLS = {
   m3: import.meta.env.VITE_API_M3_URL ?? '/api/m3',
 }
 
-// Identidad provisional desde localStorage (seashare.*); si falta, no se manda nada.
+// Identidad desde localStorage (seashare.*); si falta, no se manda nada.
+// M1 autentica con el JWT del login; M2 y M3 reciben la identidad en cabeceras X-User-*.
 function readIdentityHeaders(module) {
   let userId = null
   let role = null
+  let token = null
   try {
     userId = localStorage.getItem('seashare.userId')
     role = localStorage.getItem('seashare.role')
+    token = localStorage.getItem('seashare.token')
   } catch {
     // sin localStorage: la petición sale sin identidad
   }
   const headers = {}
+  if (module === 'm1') {
+    if (token) headers.Authorization = `Bearer ${token}`
+    return headers
+  }
   if (userId) headers['X-User-Id'] = userId
   if (role) {
     // FINADMIN es vocabulario de la UI; el backend M2 solo conoce FINANCE
@@ -64,22 +71,36 @@ function toNetworkError(error) {
   throw new NetworkError(error)
 }
 
+// Token de M1 vencido o inválido: se limpia la sesión y se vuelve al login.
+function expireSession() {
+  try {
+    ;['seashare.token', 'seashare.role', 'seashare.userId'].forEach((key) => localStorage.removeItem(key))
+  } catch {
+    // nada que limpiar
+  }
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') window.location.assign('/login')
+}
+
 export async function request(module, path, { method = 'GET', body, signal, headers: extraHeaders } = {}) {
   const headers = { Accept: 'application/json', ...readIdentityHeaders(module), ...extraHeaders }
-  if (body) headers['Content-Type'] = 'application/json'
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData
+  if (body && !isForm) headers['Content-Type'] = 'application/json'
   let res
   try {
     res = await fetch(`${BASE_URLS[module]}${path}`, {
       method,
       signal,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
     })
   } catch (error) {
     toNetworkError(error)
   }
   const data = res.status === 204 ? null : await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(res.status, data)
+  if (!res.ok) {
+    if (module === 'm1' && res.status === 401 && !path.startsWith('/api/v1/auth/')) expireSession()
+    throw new ApiError(res.status, data)
+  }
   return data
 }
 

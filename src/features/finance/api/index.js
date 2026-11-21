@@ -12,10 +12,10 @@ import { requireOwnerId } from './config'
 // Tipos de registro del contrato (UC12/UC13); también alimenta el filtro por tipo.
 export const TYPE_LABEL = { CHARGE: 'Cobro', REFUND: 'Reembolso', SETTLEMENT: 'Dispersión', COMMISSION: 'Comisión' }
 
-// Alcance OWNER declarado por configuración (ver api/config.js).
-export { OWNER_ID } from './config'
+// Alcance OWNER: propietario de la sesión (ver api/config.js).
+export { currentOwnerId } from './config'
 
-// scope 'owner' → OWNER con el owner_id de la configuración (obligatorio y validado);
+// scope 'owner' → OWNER con el owner_id de la sesión (obligatorio y validado);
 // 'admin' → PLATFORM con owner_id opcional (filtro de propietario ya validado por la pantalla).
 function scopeQuery(scope, ownerId) {
   const query = new URLSearchParams({ scope: scope === 'owner' ? 'OWNER' : 'PLATFORM' })

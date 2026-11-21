@@ -57,3 +57,10 @@
   .card { padding: 28px 20px; }
   .head h1 { font-size: 34px; }
 }
+
+.failure {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--seashare-color-brand-accent);
+}
