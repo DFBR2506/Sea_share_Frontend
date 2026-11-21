@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createRoot } from 'react-dom/client'
 import { Avatar, Button, Dropdown, Input, Modal, SearchBar, StatusBadge, Textarea, Toggle } from '@/components/ui'
 import { BoatCard, FinancialSummary, ReservationItem } from '@/components/cards'
 import { FilterBar } from '@/components/filters'
 import { OWNER_FINANCE_SUBNAV, TopBar } from '@/components/layout'
 import { ConfirmReservationModal, DisputeResolutionModal, WithdrawFundsModal } from '@/components/modals'
+import { MapPicker } from '@/features/boats/components/MapPicker'
 import { MemoryRouter } from 'react-router-dom'
 import styles from './ComponentCatalog.module.css'
 
@@ -14,6 +16,30 @@ const TOP_BARS = [
   { role: 'RENTER', path: '/explorar' },
   { role: 'FINADMIN', path: '/finadmin/parametros' },
 ]
+
+/**
+ * Cada barra se monta en su propia raíz de React para poder traer su MemoryRouter y simular la
+ * ruta activa: anidarlo dentro del router de la aplicación rompe la página entera con
+ * "You cannot render a <Router> inside another <Router>".
+ */
+function TopBarPreview({ role, path, subItems }) {
+  const hostRef = useRef(null)
+
+  useEffect(() => {
+    const mount = document.createElement('div')
+    hostRef.current.append(mount)
+    const root = createRoot(mount)
+    root.render(
+      <MemoryRouter initialEntries={[path]}>
+        <TopBar role={role} subItems={subItems} sticky={false} />
+      </MemoryRouter>,
+    )
+    // El desmontaje se aplaza: React no permite desmontar una raíz mientras renderiza otra.
+    return () => queueMicrotask(() => { root.unmount(); mount.remove() })
+  }, [role, path, subItems])
+
+  return <div ref={hostRef} />
+}
 
 function Section({ title, children }) {
   return (
@@ -33,6 +59,7 @@ export default function ComponentCatalog() {
   const [note, setNote] = useState('')
   const [amount, setAmount] = useState('')
   const [account, setAccount] = useState('2840')
+  const [point, setPoint] = useState(null)
   const close = () => setModal(null)
 
   return (
@@ -90,9 +117,7 @@ export default function ComponentCatalog() {
       <Section title="TopBar (por rol · redimensiona para ver el menú móvil)">
         <div className={styles.stack}>
           {TOP_BARS.map(({ role, path, subItems }) => (
-            <MemoryRouter key={role + path} initialEntries={[path]}>
-              <TopBar role={role} subItems={subItems} sticky={false} />
-            </MemoryRouter>
+            <TopBarPreview key={role + path} role={role} path={path} subItems={subItems} />
           ))}
         </div>
       </Section>
@@ -115,6 +140,13 @@ export default function ComponentCatalog() {
           selectedTypes={types}
           onToggleType={(v) => setTypes((t) => (t.includes(v) ? t.filter((x) => x !== v) : [...t, v]))}
         />
+      </Section>
+
+      <Section title="Mapa de coordenadas (M1)">
+        <div className={styles.col}>
+          <MapPicker point={point} onSelect={setPoint} />
+          <Input label="Coordenadas elegidas" value={point ? `${point.lat}, ${point.long}` : ''} placeholder="Toca el mapa" readOnly />
+        </div>
       </Section>
 
       <Section title="Modales de negocio">

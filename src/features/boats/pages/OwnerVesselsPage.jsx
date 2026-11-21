@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button, DataTable, Pagination, SlideButton, StatusPill } from '@/components/ui'
 import plusIcon from '@/assets/icons/plus.svg'
 import { STATUS_UI } from '../constants'
+import { typeName } from '../format'
 import { useOwnerVessels } from '../hooks'
 import styles from './pages.module.css'
 
@@ -18,7 +19,7 @@ export default function OwnerVesselsPage() {
   const columns = [
     { key: 'name', header: 'Nombre de la embarcación', render: (v) => <><span style={{ fontWeight: 700, fontSize: 13 }}>{v.name}</span>{v.isNew && <span className={styles.newTag}>NUEVA</span>}</> },
     { key: 'plate', header: 'Matrícula' },
-    { key: 'type', header: 'Tipo' },
+    { key: 'type', header: 'Tipo', render: (v) => typeName(v.type) },
     { key: 'status', header: 'Estado operativo', render: (v) => <StatusPill tone={STATUS_UI[v.status]?.tone}>{STATUS_UI[v.status]?.label ?? v.status}</StatusPill> },
     { key: 'actions', header: 'Acciones', render: (v) => <Button variant="outline" square onClick={() => navigate(`/owner/embarcaciones/${v.id}`)}>Ver Detalles</Button> },
   ]

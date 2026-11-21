@@ -1,0 +1,23 @@
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-6) var(--page-gutter);
+  background: var(--seashare-color-bg-default);
+}
+.card {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  max-width: 460px;
+  padding: var(--space-6);
+  border-radius: 20px;
+  background: var(--seashare-color-surface);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+.icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--seashare-color-brand-soft); font-size: 28px; }
+.code { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--seashare-color-text-secondary); }
+.title { margin: 0; font-size: clamp(20px, 3vw, 24px); color: var(--seashare-color-text-brand); }
+.text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--seashare-color-text-secondary); }
+.actions { margin-top: var(--space-3); }

@@ -10,3 +10,4 @@
 .services p { margin: 0 0 16px; font-size: 11px; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
 .rowLabel { width: 130px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.noPoint { margin: 0; padding: var(--space-5); border: 1px dashed var(--seashare-color-line-strong); border-radius: var(--radius-md); font-size: 12px; text-align: center; color: var(--seashare-color-text-secondary); }

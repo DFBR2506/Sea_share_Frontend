@@ -22,6 +22,13 @@ export const getVessel = (id, { admin = false } = {}) => request('m1', `${base(a
 export const listFleetOwners = () => request('m1', `${ADMIN}/owners`).then((data) => data.owners.map(mapOwner))
 export const getOwner = (id) => request('m1', `/api/v1/admin/owners/${id}`).then(mapOwner)
 
+// Búsqueda de propietarios por nombre o cédula (el servidor exige 3 caracteres como mínimo).
+export const searchOwners = (query) =>
+  request('m1', `/api/v1/admin/owners?${new URLSearchParams({ q: query.trim() })}`).then((data) => ({
+    owners: data.owners.map(mapOwner),
+    hasMore: data.has_more ?? false,
+  }))
+
 export const listBoatTypes = () => request('m1', '/api/v1/fleet/boat-types').then((data) =>
   data.types.map((t) => ({ code: t.code, name: t.name, maxCapacity: t.max_capacity })))
 

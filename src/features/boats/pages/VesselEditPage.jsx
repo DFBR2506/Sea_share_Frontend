@@ -3,37 +3,71 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { BackButton, PageCard, PageCardHead } from '@/components/layout'
 import { ConfirmDialog } from '@/components/modals'
 import { Button, Checkbox, Chip, Input } from '@/components/ui'
-import { MapPlaceholder } from '../components/MapPlaceholder'
+import { MapPicker } from '../components/MapPicker'
 import { MANDATORY_SERVICES, SERVICE_OPTIONS } from '../constants'
+import { formatCoordinate, typeName } from '../format'
 import { useUpdateVessel, useVessel } from '../hooks'
+import { capacityError, MESSAGES, nameError, normalizeName, photoError, portNameError, rateError } from '../validation'
 import styles from './pages.module.css'
+
+const pointOf = (port) => {
+  const lat = Number(port.lat)
+  const long = Number(port.long)
+  return Number.isFinite(lat) && Number.isFinite(long) && port.lat !== '' ? { lat, long } : null
+}
 
 function EditForm({ vessel }) {
   const navigate = useNavigate()
   const update = useUpdateVessel()
   const back = `/owner/embarcaciones/${vessel.id}`
-  const [form, setForm] = useState({ name: vessel.name, capacity: String(vessel.capacity), hourlyRate: String(Number(vessel.hourlyRate)), portName: vessel.port.name, lat: vessel.port.lat, long: vessel.port.long, extras: vessel.extras })
+  const [form, setForm] = useState({
+    name: vessel.name,
+    capacity: String(vessel.capacity),
+    hourlyRate: String(Number(vessel.hourlyRate)),
+    portName: vessel.port.name,
+    point: pointOf(vessel.port),
+    extras: vessel.extras,
+  })
   const [photo, setPhoto] = useState(null)
+  const [photoProblem, setPhotoProblem] = useState(null)
   const [touched, setTouched] = useState(false)
   const [discarding, setDiscarding] = useState(false)
 
+  // En la edición los campos vacíos avisan con el texto corto: no hay un registro que "continuar".
+  const required = { requiredMessage: MESSAGES.editRequired }
   const errors = {
-    name: !form.name.trim() && 'El nombre es obligatorio',
-    capacity: !(Number(form.capacity) > 0) && 'Ingresa una capacidad válida',
-    hourlyRate: !(Number(form.hourlyRate) > 0) && 'Ingresa una tarifa válida',
-    portName: !form.portName.trim() && 'El puerto es obligatorio',
-    lat: !Number.isFinite(Number(form.lat)) || form.lat === '' ? 'Latitud inválida' : false,
-    long: !Number.isFinite(Number(form.long)) || form.long === '' ? 'Longitud inválida' : false,
+    name: nameError(form.name, required),
+    capacity: capacityError(form.capacity, required),
+    hourlyRate: rateError(form.hourlyRate, required),
+    portName: portNameError(form.portName, required),
+    point: form.point ? null : MESSAGES.coordinatesRequired,
+    photo: photoProblem,
   }
   const server = (field) => update.error?.fieldError?.(field)
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
   const toggle = (s) => setForm((f) => ({ ...f, extras: f.extras.includes(s) ? f.extras.filter((x) => x !== s) : [...f.extras, s] }))
+  const show = (key) => (touched && errors[key]) || undefined
+
+  const pickPhoto = async (file) => {
+    setPhoto(file)
+    setPhotoProblem(file ? await photoError(file) : null)
+  }
 
   const save = () => {
     setTouched(true)
     if (Object.values(errors).some(Boolean)) return
     update.mutate(
-      { id: vessel.id, changes: { name: form.name.trim(), capacity: Number(form.capacity), hourlyRate: Number(form.hourlyRate), extras: form.extras, port: { name: form.portName.trim(), lat: String(form.lat).trim(), long: String(form.long).trim() }, photo } },
+      {
+        id: vessel.id,
+        changes: {
+          name: normalizeName(form.name),
+          capacity: Number(form.capacity),
+          hourlyRate: Number(form.hourlyRate),
+          extras: form.extras,
+          port: { name: normalizeName(form.portName), lat: String(form.point.lat), long: String(form.point.long) },
+          photo,
+        },
+      },
       { onSuccess: () => navigate(back) },
     )
   }
@@ -48,27 +82,30 @@ function EditForm({ vessel }) {
             <p className={styles.sectionLabel}>Fotografía de la embarcación</p>
             <label className={styles.photoBox} style={vessel.photoUrl ? { backgroundImage: `url(${vessel.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
               <span className={styles.photoBtn}>{photo ? photo.name : 'Cambiar fotografía'}</span>
-              <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+              <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)} />
             </label>
-            {server('photo') && <span role="alert" style={{ fontSize: 11 }}>{server('photo')}</span>}
+            {(photoProblem || server('photo')) && <span role="alert" className={styles.fieldError}>{photoProblem || server('photo')}</span>}
             <div className={styles.lockedWrap}>
               <Input caps label="Matrícula legal (bloqueada)" value={vessel.plate} disabled readOnly />
-              <Input caps label="Tipo de embarcación (bloqueado)" value={vessel.type} disabled readOnly />
+              <Input caps label="Tipo de embarcación (bloqueado)" value={typeName(vessel.type)} disabled readOnly />
             </div>
           </div>
           <div className={styles.stack}>
-            <Input caps label="Nombre de la embarcación" value={form.name} onChange={set('name')} error={touched && errors.name || server('name')} />
+            <Input caps label="Nombre de la embarcación" maxLength={50} value={form.name} onChange={set('name')} error={show('name') || server('name')} />
             <div className={styles.two}>
-              <Input caps label="Capacidad máxima (pasajeros)" inputMode="numeric" value={form.capacity} onChange={set('capacity')} error={touched && errors.capacity || server('max_capacity')} />
-              <Input caps label="Tarifa base (por hora)" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={touched && errors.hourlyRate || server('base_rate')} />
+              <Input caps label="Capacidad máxima (pasajeros)" inputMode="numeric" value={form.capacity} onChange={set('capacity')} error={show('capacity') || server('max_capacity')} />
+              <Input caps label="Tarifa base (por hora)" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate') || server('base_rate')} />
             </div>
             <div>
               <p className={styles.sectionLabel}>Puerto de atraque (selección en mapa interactivo)</p>
-              <MapPlaceholder port={{ name: form.portName, lat: form.lat, long: form.long }} />
-              <div className={styles.two} style={{ marginTop: 12 }}>
-                <Input caps label="Nombre del puerto" value={form.portName} onChange={set('portName')} error={touched && errors.portName || server('port_name')} />
-                <Input caps label="Latitud" inputMode="decimal" value={form.lat} onChange={set('lat')} error={touched && errors.lat || server('coordinates')} />
-                <Input caps label="Longitud" inputMode="decimal" value={form.long} onChange={set('long')} error={touched && errors.long} />
+              <MapPicker point={form.point} onSelect={(point) => setForm((f) => ({ ...f, point }))} />
+              {show('point') && <span role="alert" className={styles.fieldError}>{errors.point}</span>}
+              <div className={styles.stack} style={{ marginTop: 12 }}>
+                <Input caps label="Nombre del puerto" maxLength={50} value={form.portName} onChange={set('portName')} error={show('portName') || server('port_name')} />
+                <div className={styles.two}>
+                  <Input caps label="Latitud" value={form.point ? formatCoordinate(form.point.lat) : ''} placeholder="Marca el mapa" readOnly error={server('coordinates')} />
+                  <Input caps label="Longitud" value={form.point ? formatCoordinate(form.point.long) : ''} placeholder="Marca el mapa" readOnly />
+                </div>
               </div>
             </div>
             <div>
@@ -83,10 +120,10 @@ function EditForm({ vessel }) {
             </div>
           </div>
         </div>
-        {update.error && <p role="alert" style={{ fontSize: 12, color: 'var(--seashare-color-brand-accent)' }}>{update.error.message}</p>}
+        {update.error && <p role="alert" className={styles.formError}>{update.error.message}</p>}
         <div className={styles.footerBar}>
           <Button variant="soft" square onClick={() => setDiscarding(true)}>Descartar</Button>
-          <Button square onClick={save} disabled={update.isPending}>Guardar cambios</Button>
+          <Button square onClick={save} disabled={update.isPending}>{update.isPending ? 'Guardando…' : 'Guardar cambios'}</Button>
         </div>
       </PageCard>
 

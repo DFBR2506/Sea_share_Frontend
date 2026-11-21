@@ -1,0 +1,57 @@
+.picker {
+  position: relative;
+  height: 240px;
+  border: 1px solid var(--seashare-color-brand-primary);
+  border-radius: var(--radius-md);
+  background: var(--seashare-color-brand-soft);
+  overflow: hidden;
+  isolation: isolate;
+}
+.picker[data-readonly] { border-color: var(--seashare-color-line-strong); height: 200px; }
+.canvas { width: 100%; height: 100%; }
+/* Leaflet pinta sus capas con z-index altos: se contienen para no tapar modales ni la topbar. */
+.canvas :global(.leaflet-pane),
+.canvas :global(.leaflet-top),
+.canvas :global(.leaflet-bottom) { z-index: 1; }
+.canvas :global(.leaflet-container) { font: var(--text-label); background: var(--seashare-color-brand-soft); }
+.canvas :global(.leaflet-control-attribution) { font-size: 9px; background: color-mix(in srgb, var(--seashare-color-surface) 80%, transparent); }
+.canvas :global(.leaflet-bar a) { color: var(--seashare-color-text-brand); }
+
+.dot {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--seashare-color-surface);
+  border-radius: 50%;
+  background: var(--seashare-color-brand-primary);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--seashare-color-brand-primary) 24%, transparent);
+}
+
+.hint {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 2;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--seashare-color-line-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--seashare-color-surface) 92%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--seashare-color-text-brand);
+  pointer-events: none;
+}
+
+.failure {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--seashare-color-brand-soft);
+  text-align: center;
+}
+.failure p { margin: 0; max-width: 32ch; font-size: 12px; color: var(--seashare-color-text-brand); }

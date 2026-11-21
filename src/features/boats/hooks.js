@@ -7,6 +7,18 @@ export const useOwnerVessels = () => useQuery({ queryKey: [...KEY, 'owner-vessel
 export const useAllVessels = (filters) => useQuery({ queryKey: [...KEY, 'all-vessels', filters], queryFn: () => api.listAllVessels(filters) })
 export const useVessel = (id, { admin = false } = {}) => useQuery({ queryKey: [...KEY, 'vessel', admin, id], queryFn: () => api.getVessel(id, { admin }), retry: false })
 export const useFleetOwners = () => useQuery({ queryKey: [...KEY, 'owners'], queryFn: api.listFleetOwners })
+
+export const OWNER_SEARCH_MIN_CHARS = 3
+
+/** Resultados de la búsqueda de propietarios: solo se consulta desde 3 caracteres. */
+export const useOwnerSearch = (query) => useQuery({
+  queryKey: [...KEY, 'owner-search', query],
+  queryFn: () => api.searchOwners(query),
+  enabled: query.length >= OWNER_SEARCH_MIN_CHARS,
+  retry: false,
+  placeholderData: (previous) => previous,
+})
+
 export const useOwner = (id) => useQuery({ queryKey: [...KEY, 'owner', id], queryFn: () => api.getOwner(id), retry: false })
 export const useBoatTypes = () => useQuery({ queryKey: [...KEY, 'boat-types'], queryFn: api.listBoatTypes, staleTime: Infinity })
 export const useDraft = () => useQuery({ queryKey: [...KEY, 'draft'], queryFn: api.getDraft, staleTime: 0, gcTime: 0 })
@@ -23,3 +35,6 @@ export const useDeleteVessel = () => useVesselMutation(({ id, ...options }) => a
 export const useCreateDraft = () => useVesselMutation((data) => api.createDraft(data))
 export const useDeleteDraft = () => useVesselMutation(() => api.deleteDraft())
 export const useCompleteRegistration = () => useVesselMutation(({ id, data }) => api.completeRegistration(id, data))
+
+/** Comprobación de la matrícula contra el servidor (no toca la caché de flota). */
+export const useCheckPlate = () => useMutation({ mutationFn: api.checkPlateAvailable })

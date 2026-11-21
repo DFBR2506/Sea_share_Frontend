@@ -1,6 +1,14 @@
 // Vocabulario de la UI de embarcaciones (M1).
 export const MANDATORY_SERVICES = ['Capitán', 'Combustible']
 
+// Tipos de embarcación de M1 (`type`) → nombre en pantalla.
+export const TYPE_NAMES = {
+  MOTORBOAT: 'Lancha',
+  YACHT: 'Yate',
+  CATAMARAN: 'Catamarán',
+  SAILBOAT: 'Velero',
+}
+
 // Servicios adicionales: clave del contrato de M1 (snake_case) y etiqueta en pantalla.
 export const SERVICES = [
   { key: 'life_jackets', label: 'Chalecos salvavidas' },

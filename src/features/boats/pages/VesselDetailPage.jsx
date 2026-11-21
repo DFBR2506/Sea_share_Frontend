@@ -7,7 +7,11 @@ import wrenchIcon from '@/assets/icons/wrench.svg'
 import { Button, Input, SlideButton, StatusPill, Textarea } from '@/components/ui'
 import { VesselDetailView } from '../components/VesselDetailView'
 import { STATUS_UI } from '../constants'
+import styles from './pages.module.css'
 import { useDeleteVessel, useRequestReview, useSetMaintenance, useVessel } from '../hooks'
+
+// Reservada o En Navegación: la embarcación está comprometida y no se edita, elimina ni suspende.
+const CHANGEABLE = ['DISPONIBLE', 'MANTENIMIENTO']
 
 // <input type=datetime-local> → ISO-8601 con zona, como pide M1.
 const toIso = (local) => (local ? new Date(local).toISOString() : '')
@@ -34,6 +38,7 @@ export default function VesselDetailPage({ mode }) {
 
   const inMaintenance = vessel.status === 'MANTENIMIENTO'
   const ui = STATUS_UI[vessel.status] ?? { label: vessel.status }
+  const changeable = CHANGEABLE.includes(vessel.status)
   // El propietario no puede terminar un mantenimiento que inició el administrador: solo pedir revisión.
   const lockedByAdmin = inMaintenance && !admin && vessel.maintenanceBy === 'ADMIN'
   const mutationError = maintenance.error ?? review.error ?? remove.error
@@ -51,15 +56,16 @@ export default function VesselDetailPage({ mode }) {
           badge={<StatusPill tone={ui.tone}>{ui.label}</StatusPill>}
           actions={
             <>
-              {mode === 'owner' && <Button variant="outline" square onClick={() => navigate(`${base}/${vessel.id}/editar`)}>Editar</Button>}
+              {mode === 'owner' && <Button variant="outline" square disabled={!changeable} onClick={() => navigate(`${base}/${vessel.id}/editar`)}>Editar</Button>}
               {lockedByAdmin
                 ? <Button variant="outline" square disabled={vessel.reviewRequested || review.isPending} onClick={() => review.mutate(vessel.id)}>{vessel.reviewRequested ? 'Revisión solicitada' : 'Solicitar revisión'}</Button>
-                : <SlideButton icon={wrenchIcon} tone="warning" onClick={() => { setReason(''); setStart(nowLocal()); setUntil(''); maintenance.reset(); setDialog('maintenance') }}>{inMaintenance ? 'Terminar mantenimiento' : 'Enviar a Mantenimiento'}</SlideButton>}
-              <SlideButton icon={trashIcon} tone="danger" onClick={() => { setReason(''); remove.reset(); setDialog('delete') }}>Eliminar</SlideButton>
+                : <SlideButton icon={wrenchIcon} tone="warning" disabled={!changeable} onClick={() => { setReason(''); setStart(nowLocal()); setUntil(''); maintenance.reset(); setDialog('maintenance') }}>{inMaintenance ? 'Terminar mantenimiento' : 'Enviar a Mantenimiento'}</SlideButton>}
+              <SlideButton icon={trashIcon} tone="danger" disabled={!changeable} onClick={() => { setReason(''); remove.reset(); setDialog('delete') }}>Eliminar</SlideButton>
             </>
           }
         />
-        {mutationError && dialog === null && <p role="alert" style={{ color: 'var(--seashare-color-brand-accent)', fontSize: 12 }}>{mutationError.message}</p>}
+        {!changeable && <p className={styles.actionNote}>La embarcación está {ui.label.toLowerCase()}: no se puede editar, suspender ni eliminar hasta que quede disponible.</p>}
+        {mutationError && dialog === null && <p role="alert" className={styles.formError}>{mutationError.message}</p>}
         <VesselDetailView
           vessel={vessel}
           servicesNote={mode === 'owner' ? 'Servicios base obligatorios y equipamiento adicional seleccionado para el alquiler' : 'Servicios base obligatorios y equipamiento adicional configurado por el propietario'}

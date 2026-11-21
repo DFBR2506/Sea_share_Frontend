@@ -21,6 +21,7 @@ import OwnerReservationsPage from '@/features/reservations/pages/OwnerReservatio
 import FinanceParamsPage from '@/features/finance/pages/FinanceParamsPage'
 import FinanceRecordsPage from '@/features/finance/pages/FinanceRecordsPage'
 import FinanceReportPage from '@/features/finance/pages/FinanceReportPage'
+import { ForbiddenPage, NotFoundPage } from '@/pages/status/StatusPage'
 import RootRedirect from './RootRedirect'
 
 export const router = createBrowserRouter([
@@ -75,5 +76,6 @@ export const router = createBrowserRouter([
       { path: '/finadmin/informe', element: <FinanceReportPage scope="admin" /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '/sin-acceso', element: <ForbiddenPage /> },
+  { path: '*', element: <NotFoundPage /> },
 ])

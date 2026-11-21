@@ -1,0 +1,55 @@
+.root { position: relative; width: 100%; }
+
+.panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  left: 0;
+  z-index: 40;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--seashare-color-line-soft);
+  border-radius: var(--radius-md);
+  background: var(--seashare-color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+.heading {
+  margin: var(--space-2) var(--space-3) var(--space-2);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--seashare-color-text-brand);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+.rowActive { background: var(--seashare-color-brand-soft); }
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--seashare-color-brand-primary);
+  border-radius: 50%;
+  background: var(--seashare-color-brand-soft);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--seashare-color-text-brand);
+}
+.person { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.name { font-size: 13px; font-weight: 700; color: var(--seashare-color-text-primary); }
+.doc { font-size: 11px; color: var(--seashare-color-text-secondary); }
+
+.message { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-5) var(--space-4); margin: 0; font-size: 12px; text-align: center; color: var(--seashare-color-text-secondary); }
+.message p { margin: 0; }
+.more { margin: var(--space-2) var(--space-3); font-size: 10px; color: var(--seashare-color-text-secondary); }
