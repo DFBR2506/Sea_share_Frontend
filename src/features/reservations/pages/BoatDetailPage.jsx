@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { StatGrid } from '@/components/cards'
 import boatIcon from '@/assets/icons/boat.svg'
@@ -7,27 +8,36 @@ import { copDecimal, formatFull, formatRange, copMoney, inclusiveDays, toISO } f
 import { m3ErrorMessage } from '@/features/finance/errors'
 import { useEstimate } from '@/features/finance/hooks'
 import { useBoat } from '../hooks'
-import { boatUuid } from '../api'
+import { getQuotation } from '../api'
 import { clearExpiredCheckout } from '../checkout/checkoutState'
 import styles from './pages.module.css'
 
 export default function BoatDetailPage() {
   const { boatId } = useParams()
   const navigate = useNavigate()
-  const { data: boat, isPending } = useBoat(boatId)
+  const { data: boat, isPending, error } = useBoat(boatId)
   const [range, setRange] = useState({ start: null, end: null })
-  const [pax, setPax] = useState(1)
+  const [pax, setPax] = useState(null)
+  const startDate = range.start ? toISO(range.start) : ''
+  const endDate = range.end ? toISO(range.end) : ''
+  const ready = Boolean(startDate && endDate && Number.isInteger(pax) && pax > 0 && pax <= boat?.passengers)
+  const { data: quotation, error: quotationError, isFetching } = useQuery({
+    queryKey: ['m2', 'quotation', boatId, startDate, endDate, pax],
+    queryFn: () => getQuotation(boatId, startDate, endDate, pax),
+    enabled: ready, staleTime: 0, retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false,
+  })
 
   const days = range.start && range.end ? inclusiveDays(range.start, range.end) : 0
   // UC02 · estimación real de M3: la clave del query cambia con la selección, así la respuesta
   // de una selección anterior se descarta y la petición en curso se aborta con su señal.
   const estimate = useEstimate({
-    boatId: boatUuid(boatId),
+    boatId,
     startDate: days ? toISO(range.start) : '',
     endDate: days ? toISO(range.end) : '',
     passengers: pax,
   })
 
+  if (error) return <p role="alert" className={styles.state}>{error.message}</p>
   if (isPending) return <p className={styles.state}>Cargando…</p>
   if (!boat) return <p className={styles.state}>No encontramos esta embarcación.</p>
 
@@ -40,7 +50,7 @@ export default function BoatDetailPage() {
   }
 
   // Sin UUID en el stub de Flota la consulta queda desactivada (isPending eterno en v5): no hay estimación.
-  const estimateTotal = !boatUuid(boatId) ? 'No disponible' : estimate.isPending ? 'Calculando…' : estimate.data ? copDecimal(estimate.data.total) : 'No disponible'
+  const estimateTotal = !boatId ? 'No disponible' : estimate.isPending ? 'Calculando…' : estimate.data ? copDecimal(estimate.data.total) : 'No disponible'
 
   return (
     <>
@@ -60,7 +70,7 @@ export default function BoatDetailPage() {
         <div>
           <h1 className={styles.name}>{boat.name}</h1>
           <p className={styles.loc}>{boat.location}</p>
-          <p className={styles.specs}>{boat.passengers} pasajeros · {boat.cabins} camarotes · {boat.lengthM} m de eslora</p>
+          <p className={styles.specs}>{boat.passengers} pasajeros · {boat.cabins} camarotes{boat.lengthM != null && <> · {boat.lengthM} m de eslora</>}</p>
           <StatGrid items={[
             { value: boat.passengers, label: 'Pasajeros' },
             { value: boat.captain ? 'Sí' : 'No', label: 'Cap. incluido' },
@@ -84,9 +94,9 @@ export default function BoatDetailPage() {
             <div className={styles.paxRow}>
               <div><strong>Pasajeros</strong><span className={styles.muted}>Máx. {boat.passengers} personas</span></div>
               <div className={styles.stepper}>
-                <button type="button" aria-label="Menos pasajeros" disabled={pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
-                <span>{pax}</span>
-                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax(pax + 1)}>+</button>
+                <button type="button" aria-label="Menos pasajeros" disabled={pax == null || pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
+                <span>{pax ?? '—'}</span>
+                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax((pax ?? 0) + 1)}>+</button>
               </div>
             </div>
             {days > 0 && (
@@ -103,7 +113,8 @@ export default function BoatDetailPage() {
                 )}
               </>
             )}
-            <Button block disabled={!days} onClick={goToPayment}>Reservar</Button>
+            {quotationError && <p role="alert">{quotationError.message}</p>}
+            <Button block disabled={!ready || !quotation || isFetching || Boolean(quotationError)} onClick={goToPayment}>Reservar</Button>
           </div>
         </div>
       </div>

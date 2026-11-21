@@ -1,6 +1,6 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { copMoney, formatRange } from '@/lib/dates'
+import { formatRange } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import PaymentDetails from '../components/PaymentDetails'
@@ -11,13 +11,13 @@ export default function PaymentMethodPage() {
   const { boatId } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { boat, selection, price, accepted, expired } = useCheckout()
+  const { boat, selection, quotation, accepted, expired } = useCheckout()
   const summaryUrl = `/explorar/${boatId}/pago?${params}`
   // Es una barrera de navegación local, no una autorización del servidor.
   if (!accepted) return <Navigate to={summaryUrl} replace />
 
   const { start, end, pax } = selection
-  const days = price.days
+  const days = quotation.total_days
 
   return (
     <>
@@ -47,8 +47,9 @@ export default function PaymentMethodPage() {
                 <p>{formatRange(start, end)} · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>
               </div>
             </div>
-            <span className={styles.muted}>Total a pagar</span>
-            <p className={styles.bigTotal}>{copMoney(price.total)}</p>
+            <span className={styles.muted}>Total estimado</span>
+            <p className={styles.bigTotal}>{quotation.total_amount} {quotation.currency}</p>
+            {quotation.warning && <p>{quotation.warning}</p>}
             <p className={styles.payNote}>Política de Cancelación aceptada en el resumen.</p>
           </section>
           <Button block onClick={() => navigate(summaryUrl)}>Revisar resumen</Button>

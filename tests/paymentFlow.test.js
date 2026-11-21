@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { ApiError } from '../src/lib/http.js'
 import { createPaymentFlow } from '../src/features/reservations/checkout/paymentFlow.js'
 import { detachedPaymentAdapter } from '../src/features/reservations/checkout/detachedPaymentAdapter.js'
 
@@ -14,7 +15,10 @@ const result = () => ({
 })
 const options = (overrides = {}) => ({
   checkoutId: 'local-checkout', contact: { name: 'Private Name', phone: '3001234567' },
-  amount: 10000, expiresAt: now + 60000, now: () => now, ...overrides,
+  amount: 10000, expiresAt: now + 60000, now: () => now,
+  reservationId: 'test-reservation', acceptsCancellationPolicy: true,
+  pollIntervalMs: 1, getReservation: async () => ({ status: 'CONFIRMADA' }),
+  ...overrides,
 })
 const deferred = () => {
   let resolve
@@ -23,8 +27,8 @@ const deferred = () => {
 }
 const response = { mode: 'detached', outcome: 'tokenized', paymentCreated: false }
 
-test('el adaptador confirma captura local, nunca aprobación ni un pago creado', async () => {
-  const flow = createPaymentFlow(options())
+test('un pago aceptado queda tokenized y la vista no expone datos sensibles', async () => {
+  const flow = createPaymentFlow(options({ adapter: async () => response }))
   assert.equal(flow.snapshot.status, 'loading_sdk')
   flow.ready()
   assert.equal(flow.snapshot.status, 'ready')
@@ -33,9 +37,6 @@ test('el adaptador confirma captura local, nunca aprobación ni un pago creado',
   assert.deepEqual(await pending, response)
   assert.equal(flow.snapshot.status, 'tokenized')
   assert.equal(flow.hasCapturedPayment, true)
-  assert.equal(flow.snapshot.evidence.paymentCreated, false)
-  assert.equal(flow.snapshot.evidence.mode, 'detached')
-  assert.equal(flow.snapshot.evidence.contactPhonePresent, true)
   const serialized = JSON.stringify(flow.snapshot)
   for (const value of ['sensitive-token', 'private@example.com', '0012345678', 'Private Name', '3001234567']) {
     assert.equal(serialized.includes(value), false)
@@ -81,7 +82,7 @@ test('revalida TTL justo antes de entregar datos al adaptador', async () => {
   assert.equal(flow.snapshot.status, 'expired')
 })
 
-test('descarta el resultado si el plazo vence durante la operación asíncrona', async () => {
+test('si el plazo vence con el pago ya iniciado, no se cancela ni se descarta', async () => {
   let clock = now
   const entered = deferred()
   const finish = deferred()
@@ -93,22 +94,34 @@ test('descarta el resultado si el plazo vence durante la operación asíncrona',
   await entered.promise
   clock += 60000
   finish.resolve(response)
-  await assert.rejects(pending)
-  assert.equal(signal.aborted, true)
-  assert.equal(flow.snapshot.status, 'expired')
-  assert.equal(flow.snapshot.evidence, null)
-  assert.equal(flow.hasCapturedPayment, false)
+  assert.deepEqual(await pending, response)
+  assert.equal(signal.aborted, false)
+  assert.equal(flow.snapshot.status, 'tokenized')
+  assert.equal(flow.hasCapturedPayment, true)
+  flow.dispose()
 })
 
-test('expirar explícitamente elimina una captura ya obtenida', async () => {
-  const flow = createPaymentFlow(options())
+test('expirar después de aceptado el pago no lo descarta', async () => {
+  const flow = createPaymentFlow(options({ adapter: async () => response }))
   await flow.submit(result())
   flow.expire()
+  assert.equal(flow.snapshot.status, 'tokenized')
+  assert.equal(flow.hasCapturedPayment, true)
+  flow.dispose()
+})
+
+test('expirar antes de iniciar el pago bloquea futuros envíos', async () => {
+  let calls = 0
+  const flow = createPaymentFlow(options({ adapter: async () => { calls++ } }))
+  flow.expire()
+  const { status, evidence } = flow.snapshot
+  assert.equal(status, 'expired')
+  assert.equal(evidence, null)
   assert.equal(flow.hasCapturedPayment, false)
-  assert.equal(flow.snapshot.status, 'expired')
-  assert.equal(flow.snapshot.evidence, null)
   flow.ready()
+  assert.equal(flow.snapshot.status, 'expired')
   await assert.rejects(flow.submit(result()))
+  assert.equal(calls, 0)
 })
 
 test('salir cancela la señal e ignora respuestas tardías sin notificar a React', async () => {
@@ -140,16 +153,41 @@ test('un error permite reintentar y nunca propaga mensajes con datos sensibles',
   assert.equal(flow.snapshot.status, 'error')
   assert.equal(flow.hasCapturedPayment, false)
   assert.equal(flow.snapshot.message.includes('private@example.com'), false)
+  assert.equal(flow.snapshot.message, 'No se pudo procesar el pago. Intenta de nuevo.')
   await flow.submit(result())
   assert.equal(flow.snapshot.status, 'tokenized')
   flow.dispose()
 })
 
-test('una respuesta financiera simulada no se acepta como tokenización', async () => {
-  const flow = createPaymentFlow(options({ adapter: async () => ({ status: 'APPROVED', paymentCreated: true }) }))
-  await assert.rejects(flow.submit(result()))
-  assert.equal(flow.snapshot.status, 'error')
-  assert.equal(flow.hasCapturedPayment, false)
+test('deja de consultar la reserva en cuanto está CONFIRMADA', async () => {
+  let calls = 0
+  const flow = createPaymentFlow(options({
+    adapter: async () => response,
+    getReservation: async () => {
+      calls++
+      return { status: 'CONFIRMADA' }
+    },
+  }))
+  await flow.submit(result())
+  assert.equal(calls, 1)
+  assert.equal(flow.snapshot.reservationStatus, 'CONFIRMADA')
+  assert.equal(flow.snapshot.status, 'tokenized')
+})
+
+test('si la reserva no se confirma, consulta maxPollAttempts veces y termina en tokenized', async () => {
+  let calls = 0
+  const flow = createPaymentFlow(options({
+    adapter: async () => response,
+    maxPollAttempts: 3,
+    getReservation: async () => {
+      calls++
+      return { status: 'PENDING_PAYMENT' }
+    },
+  }))
+  await flow.submit(result())
+  assert.equal(calls, 3)
+  assert.equal(flow.snapshot.reservationStatus, 'PENDING_PAYMENT')
+  assert.equal(flow.snapshot.status, 'tokenized')
 })
 
 test('datos inválidos no alcanzan el adaptador', async () => {
@@ -158,6 +196,14 @@ test('datos inválidos no alcanzan el adaptador', async () => {
   await assert.rejects(flow.submit({ ...result(), formData: { token: '' } }))
   assert.equal(calls, 0)
   assert.equal(flow.snapshot.status, 'error')
+})
+
+test('los errores de la API se muestran tal cual', async () => {
+  const message = 'El pago fue rechazado.'
+  const apiError = new ApiError(422, { detail: message })
+  const flow = createPaymentFlow(options({ adapter: async () => { throw apiError } }))
+  await assert.rejects(flow.submit(result()), (error) => error === apiError && error.message === message)
+  assert.equal(flow.snapshot.message, message)
 })
 
 test('el adaptador local respeta cancelación e incompletitud', async () => {

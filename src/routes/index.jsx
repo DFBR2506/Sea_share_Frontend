@@ -26,7 +26,7 @@ import RootRedirect from './RootRedirect'
 export const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <LoginPage /> },
-  { path: '/dev/components', element: <ComponentCatalog /> },
+  ...(import.meta.env.DEV ? [{ path: '/dev/components', element: <ComponentCatalog /> }] : []),
   {
     element: <AppShell role="RENTER" />,
     children: [

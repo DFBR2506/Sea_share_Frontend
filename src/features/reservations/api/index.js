@@ -1,56 +1,123 @@
-import { BOATS, RESERVATIONS } from './mocks'
-import { OWNER_RESERVATIONS, SEED_DISPUTES } from './ownerMocks'
-import { mockBreakdown } from './pricing'
-import { inclusiveDays } from '@/lib/dates'
+import { request } from '../../../lib/http'
+import { mapVessel } from './vesselMapper'
+import { mapReservation } from './reservationMapper'
+import { mapReservationStatus } from './statusMap'
 
-// Capa de acceso a datos del módulo 2. Hoy devuelve mocks; al llegar los contratos
-// solo se cambia el cuerpo de estas funciones por `request('m2', ...)`.
+// Capa de acceso a datos del modulo 2 que habla con M2 real.
 // Las estimaciones reales de precio (M3) se acceden desde features/finance.
-export { boatUuid } from './boatUuids'
 
-const delay = (value, ms = 250) => new Promise((resolve) => setTimeout(() => resolve(value), ms))
-
-export const listBoats = () => delay(BOATS)
-
-export const getBoat = (id) => delay(BOATS.find((b) => b.id === id) ?? null)
-
-export const listReservations = () => delay(RESERVATIONS)
-
-export const getReservation = (id) => delay(RESERVATIONS.find((r) => r.id === id) ?? null)
-
-// Desglose mock del checkout (COP), con la misma regla que las reservas de ejemplo.
-export const priceBreakdown = (dailyRate, start, end, passengers) => mockBreakdown(dailyRate, inclusiveDays(start, end), passengers)
-
-// ---- Lado Propietario / Administrador (store en memoria) ----
-let ownerReservations = OWNER_RESERVATIONS.map((r) => ({ ...r }))
-let disputes = SEED_DISPUTES.map((d) => ({ ...d }))
-const clone = (v) => delay(structuredClone(v))
-const patchReservation = (id, changes) => {
-  ownerReservations = ownerReservations.map((r) => (r.id === id ? { ...r, ...changes } : r))
-  return clone(ownerReservations.find((r) => r.id === id))
+export const listBoats = async ({ passengers, type, startDate, endDate, includePagination = false, signal } = {}) => {
+  const vessels = []
+  let pagination
+  let page = 1
+  let totalPages
+  do {
+    const query = new URLSearchParams({ page: String(page) })
+    if (passengers != null && passengers !== '') query.set('passengers', String(passengers))
+    if (type) query.set('type', type)
+    if (startDate && endDate) {
+      query.set('start_date', startDate)
+      query.set('end_date', endDate)
+    }
+    const data = await request('m2', `/api/v1/vessels?${query}`, { signal })
+    if (!Array.isArray(data?.vessels)) throw new Error('La respuesta no contiene vessels como arreglo')
+    if (!Number.isInteger(data.pagination?.total_pages) || data.pagination.total_pages < 0) throw new Error('La respuesta no contiene una paginación válida')
+    vessels.push(...data.vessels.map(mapVessel))
+    pagination ??= data.pagination
+    totalPages = data.pagination.total_pages
+    page += 1
+  } while (page <= totalPages)
+  return includePagination ? { vessels, pagination } : vessels
 }
 
-export const listOwnerReservations = () => clone(ownerReservations)
-export const getOwnerReservation = (id) => clone(ownerReservations.find((r) => r.id === id) ?? null)
+export const getBoat = (id) => request('m2', `/api/v1/vessels/${id}`).then(mapVessel)
 
-export const startNavigation = (id) => patchReservation(id, { status: 'EN_NAVEGACION', phase: undefined, realDeparture: 'hoy, 14:38' })
-export const endNavigation = (id) => patchReservation(id, { status: 'COMPLETADA', realArrival: 'hoy, 12:15' })
-export const markNoShow = (id) => patchReservation(id, { status: 'CANCELADA', phase: undefined, cancelNote: 'Inasistencia del arrendatario' })
+export const getQuotation = (id, startDate, endDate, passengers) => {
+  const query = new URLSearchParams({ start_date: startDate, end_date: endDate, passengers: String(passengers) })
+  return request('m2', `/api/v1/vessels/${id}/quotations?${query}`)
+}
+
+export const createReservation = (body, idempotencyKey) => request('m2', '/api/v1/reservations', {
+  method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey },
+})
+
+export const listReservations = () => request('m2', '/api/v1/reservations').then((data) => data.reservations.map(mapReservation))
+
+export const getReservation = (id) => request('m2', `/api/v1/reservations/${id}`).then(mapReservation)
+
+export const cancelReservation = (id) => request('m2', `/api/v1/reservations/${id}/cancellation`, { method: 'POST' })
+
+// ---- Lado Propietario / Administrador ----
+export const listOwnerReservations = () => request('m2', '/api/v1/reservations').then((data) => data.reservations.map(mapReservation))
+export const getOwnerReservation = (id) => request('m2', `/api/v1/reservations/${id}`).then((data) => ({
+  ...mapReservation(data),
+  boat: {
+    name: data.vessel?.name ?? '',
+    type: data.vessel?.type ?? '',
+    imageUrl: data.vessel?.image_url ?? '',
+    amenities: data.vessel?.included_services ?? [],
+    location: data.itinerary?.departure_port?.name ?? '',
+    shortLocation: data.itinerary?.departure_port?.name ?? '',
+  },
+}))
+
+export const startNavigation = (id) => request('m2', `/api/v1/reservations/${id}/navigation-start`, { method: 'POST' }).then((data) => ({
+  id: data.reservation_id,
+  boatId: data.vessel_id,
+  status: mapReservationStatus(data.status),
+  phase: undefined,
+  realDeparture: data.actual_departure_at ?? '',
+}))
+export const endNavigation = (id) => request('m2', `/api/v1/reservations/${id}/navigation-end`, { method: 'POST' }).then((data) => ({
+  id: data.reservation_id,
+  boatId: data.vessel_id,
+  status: mapReservationStatus(data.status),
+  realArrival: data.actual_arrival_at ?? '',
+}))
+export const markNoShow = (id) => request('m2', `/api/v1/reservations/${id}/no-show`, { method: 'POST' }).then((data) => ({
+  id: data.reservation_id,
+  boatId: data.vessel_id,
+  status: mapReservationStatus(data.status),
+  phase: undefined,
+  cancelNote: data.message ?? '',
+}))
 export const cancelByHost = (id, { reason, justification }) =>
-  patchReservation(id, { status: 'CANCELADA', phase: undefined, cancelNote: 'Cancelación por anfitrión', cancelReason: reason, cancelJustification: justification })
+  request('m2', `/api/v1/reservations/${id}/cancellation`, {
+    method: 'POST',
+    body: { reason: ({ FUERZA_MAYOR: 'logistics_force_majeure', AVERIA: 'mechanical_failure' })[reason] ?? reason, justification },
+  }).then((data) => ({
+    id: data.reservation_id,
+    boatId: data.vessel_id,
+    status: mapReservationStatus(data.status),
+    phase: undefined,
+    cancelNote: data.message ?? '',
+    cancelReason: data.reason ?? '',
+    cancelJustification: data.justification ?? '',
+  }))
 
 export const submitClaim = async (id, text) => {
-  const r = ownerReservations.find((x) => x.id === id)
-  const boat = BOATS.find((b) => b.id === r.boatId)
-  const nextNumber = 2014 + disputes.length + 10
-  disputes = [...disputes, { id: `D-${nextNumber}`, reservationId: id, code: `RSV-2026-${id.replace('RS-', '0')}`, boatName: boat.name, guest: r.guest, host: boat.host.name, claim: text, closing: 'Sin novedades reportadas por el Arrendatario al momento de la entrega.', status: 'PENDIENTE', hoursLeft: 24 }]
-  return patchReservation(id, { claim: { text, sentAt: 'hoy', status: 'PENDIENTE' } })
+  return request('m2', `/api/v1/disputes/${id}/claims`, { method: 'POST', body: { description: text } })
 }
 
-export const listDisputes = () => clone(disputes)
-export const resolveDispute = (id, { accepted, note }) => {
-  disputes = disputes.map((d) => (d.id === id ? { ...d, status: 'RESUELTA', accepted, note } : d))
-  const d = disputes.find((x) => x.id === id)
-  if (d.reservationId) ownerReservations = ownerReservations.map((r) => (r.id === d.reservationId && r.claim ? { ...r, claim: { ...r.claim, status: accepted ? 'ACEPTADO' : 'RECHAZADO' } } : r))
-  return clone(d)
+export const listDisputes = ({ reservationId, signal } = {}) => {
+  const query = reservationId ? `?${new URLSearchParams({ reservation_id: reservationId })}` : ''
+  return request('m2', `/api/v1/disputes${query}`, { signal }).then((data) => data.disputes.map((dispute) => ({
+    id: dispute.dispute_id,
+    reservationId: dispute.reservation_id,
+    status: dispute.status,
+    windowStart: dispute.window_start,
+    windowEnd: dispute.window_end,
+    claim: dispute.claim?.description ?? null,
+    claimData: dispute.claim ?? null,
+  })))
+}
+export const resolveDispute = (id, { accepted, note, internalNotes }) => {
+  return request('m2', `/api/v1/disputes/${id}/status`, {
+    method: 'PUT',
+    body: {
+      new_status: accepted ? 'ACCEPTED' : 'REJECTED',
+      ...(note ? { reason: note } : {}),
+      ...(internalNotes ? { internal_notes: internalNotes } : {}),
+    },
+  })
 }

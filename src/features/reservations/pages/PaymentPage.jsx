@@ -1,6 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { copMoney, formatRange } from '@/lib/dates'
+import { formatRange } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
 import ReservationValuePanel from '../components/ReservationValuePanel'
@@ -10,14 +10,9 @@ export default function PaymentPage() {
   const { boatId } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { boat, selection, price: p, accepted, setAccepted, expired, canContinue } = useCheckout()
+  const { boat, selection, quotation, accepted, setAccepted, expired, canContinue } = useCheckout()
   const { start, end, pax } = selection
-  const days = p.days
-  const lines = [
-    ['Tarifa base', p.base],
-    ['Seguro', p.insurance],
-    ['Depósito', p.deposit],
-  ]
+  const days = quotation.total_days
 
   return (
     <>
@@ -38,13 +33,10 @@ export default function PaymentPage() {
           </section>
 
           <section className={styles.panel}>
-            <h2>Detalle del precio</h2>
+            <h2>Total estimado</h2>
             <div className={styles.lines}>
-              <div className={styles.line}><span>Alquiler ({days} {days === 1 ? 'día' : 'días'} × {copMoney(boat.pricePerDay)})</span><span>{copMoney(p.base)}</span></div>
-              <div className={styles.line}><span>Seguro náutico ({pax} × {copMoney(p.insurancePerPassenger)})</span><span>{copMoney(p.insurance)}</span></div>
-              <div className={styles.line}><span>Depósito de garantía (10 % de la tarifa diaria, reembolsable)</span><span>{copMoney(p.deposit)}</span></div>
-              <div className={`${styles.line} ${styles.total}`}><span>Total</span><span>{copMoney(p.total)}</span></div>
-              <small>El depósito se reembolsa completo si el barco se devuelve sin daños.</small>
+              <div className={`${styles.line} ${styles.total}`}><span>Total estimado</span><span>{quotation.total_amount} {quotation.currency}</span></div>
+              {quotation.warning && <p>{quotation.warning}</p>}
             </div>
           </section>
 
@@ -58,11 +50,8 @@ export default function PaymentPage() {
 
         <aside className={styles.sidebar}>
           <section className={styles.panel}>
-            <span className={styles.muted}>Total a pagar</span>
-            <p className={styles.bigTotal}>{copMoney(p.total)}</p>
-            <div className={styles.lines}>
-              {lines.map(([label, v]) => <div key={label} className={styles.line}><span>{label}</span><span>{copMoney(v)}</span></div>)}
-            </div>
+            <span className={styles.muted}>Total estimado</span>
+            <p className={styles.bigTotal}>{quotation.total_amount} {quotation.currency}</p>
           </section>
           <Button block disabled={!accepted || expired} onClick={() => {
             if (canContinue()) navigate(`/explorar/${boatId}/pago/metodo?${params}`)

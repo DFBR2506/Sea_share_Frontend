@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import boatIcon from '@/assets/icons/boat.svg'
 import { Button, StatusBadge } from '@/components/ui'
 import { cx } from '@/lib/cx'
-import { copMoney } from '@/lib/dates'
 import { formatMinSec, useCountdown } from '@/lib/useCountdown'
-import { RESERVATION_STATUS_UI } from '../api/ownerMocks'
+import { getReservationStatusUI } from '../api/statusMap'
+import { listDisputes } from '../api'
 import { ClaimModal } from '../components/ClaimModal'
 import { HostCancelModal } from '../components/HostCancelModal'
-import { useBoat, useCancelByHost, useEndNavigation, useMarkNoShow, useOwnerReservation, useStartNavigation, useSubmitClaim } from '../hooks'
+import { useCancelByHost, useEndNavigation, useMarkNoShow, useOwnerReservation, useStartNavigation, useSubmitClaim } from '../hooks'
 import base from './pages.module.css'
 import styles from './owner.module.css'
 
@@ -63,19 +64,31 @@ function Courtesy({ r, boat, onStart, onNoShow, busy }) {
 export default function OwnerReservationDetailPage() {
   const { reservationId } = useParams()
   const navigate = useNavigate()
-  const { data: r, isPending } = useOwnerReservation(reservationId)
-  const { data: boat } = useBoat(r?.boatId)
+  const { data: r, isPending, error } = useOwnerReservation(reservationId)
+  const boat = r?.boat
   const start = useStartNavigation()
   const end = useEndNavigation()
   const noShow = useMarkNoShow()
   const cancel = useCancelByHost()
   const claim = useSubmitClaim()
+  const claimPending = useRef(false)
   const [modal, setModal] = useState(null) // 'cancel' | 'claim'
+  const { data: disputes, isPending: disputesPending, isFetching: disputesFetching, error: disputesError } = useQuery({
+    queryKey: ['m2', 'disputes', 'reservation', reservationId],
+    queryFn: ({ signal }) => listDisputes({ reservationId, signal }),
+    enabled: r?.status === 'COMPLETADA', retry: false,
+  })
+  const dispute = disputes?.find((item) => item.reservationId === reservationId)
+  const claimResponse = claim.data?.reservation_id === reservationId ? claim.data : null
+  const currentClaim = dispute?.claimData ?? claimResponse?.claim
+  const disputeStatus = dispute?.status ?? claimResponse?.status
+  const claimStatus = ({ PENDING: 'PENDIENTE', ACCEPTED: 'ACEPTADO', REJECTED: 'RECHAZADO' })[disputeStatus] ?? disputeStatus ?? '—'
 
+  if (error) return <p role="alert" className={base.state}>{error.code}: {error.message}</p>
   if (isPending) return <p className={base.state}>Cargando…</p>
   if (!r || !boat) return <p className={base.state}>No encontramos esta reserva.</p>
 
-  const ui = RESERVATION_STATUS_UI[r.status]
+  const ui = getReservationStatusUI(r.status)
   const busy = start.isPending || end.isPending || noShow.isPending
   const cancelable = r.status === 'CONFIRMADA' || r.status === 'PENDIENTE_PAGO'
   const tilesBase = [[r.embark, 'HORA ACORDADA'], [boat.shortLocation, 'PUERTO DE ZARPE'], [String(r.pax), 'PASAJEROS']]
@@ -134,12 +147,12 @@ export default function OwnerReservationDetailPage() {
       </div>
     )
   } else if (r.status === 'COMPLETADA') {
-    status = r.claim ? (
+    status = currentClaim ? (
       <div className={cx(styles.banner, styles.bannerGrey)}>
-        <span style={{ fontSize: 16, color: 'var(--seashare-color-brand-primary)' }}>{r.claim.status === 'PENDIENTE' ? 'PENDIENTE' : r.claim.status}</span>
+        <span style={{ fontSize: 16, color: 'var(--seashare-color-brand-primary)' }}>{claimStatus}</span>
         <div>
-          <h2 className={styles.bannerTitle}>{r.claim.status === 'PENDIENTE' ? 'Tu reclamo está en revisión' : `Tu reclamo fue ${r.claim.status === 'ACEPTADO' ? 'aceptado' : 'rechazado'}`}</h2>
-          <p className={styles.small}>Enviado el {r.claim.sentAt}. {r.claim.status === 'PENDIENTE' ? 'Un administrador revisará tu reporte.' : 'La decisión fue notificada a ambas partes.'}</p>
+          <h2 className={styles.bannerTitle}>{disputeStatus === 'PENDING' ? 'Tu reclamo está en revisión' : claimStatus}</h2>
+          <p className={styles.small}>Enviado el {currentClaim.registered_at ?? '—'}.</p>
         </div>
       </div>
     ) : (
@@ -148,7 +161,7 @@ export default function OwnerReservationDetailPage() {
           <h2 className={styles.bannerTitle}>Viaje completado</h2>
           <p className={styles.small}>¿Hubo algún daño o incumplimiento? Puedes reportar un reclamo sobre el depósito.</p>
         </div>
-        <Button variant="secondary" onClick={() => setModal('claim')}>Reportar reclamo</Button>
+        <Button variant="secondary" disabled={!dispute?.id || disputesFetching || Boolean(disputesError)} onClick={() => { claim.reset(); setModal('claim') }}>Reportar reclamo</Button>
       </div>
     )
   } else if (r.status === 'CANCELADA') {
@@ -164,8 +177,8 @@ export default function OwnerReservationDetailPage() {
     status = (
       <div className={cx(styles.banner, styles.bannerGrey)}>
         <div>
-          <h2 className={styles.bannerTitle}>Pendiente de pago</h2>
-          <p className={styles.small}>La reserva se confirmará cuando el arrendatario complete el pago.</p>
+          <h2 className={styles.bannerTitle}>{ui.label}</h2>
+          {r.status === 'PENDIENTE_PAGO' && <p className={styles.small}>La reserva se confirmará cuando el arrendatario complete el pago.</p>}
         </div>
       </div>
     )
@@ -184,6 +197,13 @@ export default function OwnerReservationDetailPage() {
       <p className={base.muted} style={{ marginBottom: 16 }}>Arrendatario: {r.guest} · {r.pax} pasajeros</p>
 
       {status}
+      {r.status === 'COMPLETADA' && disputesPending && !disputesError && <p role="status">Cargando…</p>}
+      {disputesError && <p role="alert" className={base.state}>{disputesError.message}</p>}
+      {r.status === 'COMPLETADA' && !disputesPending && !disputesError && !dispute && <p className={base.muted}>Disputa: —</p>}
+      {claimResponse && <p role="status">{claimResponse.message}</p>}
+      {(start.error || end.error || noShow.error || cancel.error) && <p role="alert" className={base.state}>
+        {(start.error || end.error || noShow.error || cancel.error).code}: {(start.error || end.error || noShow.error || cancel.error).message}
+      </p>}
 
       <div className={styles.cols}>
         <div>
@@ -194,11 +214,11 @@ export default function OwnerReservationDetailPage() {
               {itinerary.map(([k, v]) => <div key={k} className={base.line}><span>{k}</span><span style={{ color: 'var(--seashare-color-text-primary)' }}>{v}</span></div>)}
             </div>
           </section>
-          {r.claim && (
+          {currentClaim && (
             <section className={cx(base.panel, styles.sheet)}>
               <h2>Tu reclamo</h2>
-              <p className={styles.claimText}>“{r.claim.text}”</p>
-              <p className={base.muted} style={{ marginTop: 8 }}>Registrado el {r.claim.sentAt}. Este texto es tu reclamo formal.</p>
+              <p className={styles.claimText}>“{currentClaim.description ?? '—'}”</p>
+              <p className={base.muted} style={{ marginTop: 8 }}>Registrado el {currentClaim.registered_at ?? '—'}. Este texto es tu reclamo formal.</p>
             </section>
           )}
         </div>
@@ -211,20 +231,12 @@ export default function OwnerReservationDetailPage() {
             </div>
           </section>
           <section className={cx(base.panel, styles.sheet)}>
-            <span className={base.muted}>Resumen de pago</span>
-            {r.status === 'COMPLETADA' && r.claim ? (
-              <div className={base.lines} style={{ marginTop: 12 }}><div className={base.line}><span>Depósito de garantía</span><span>{copMoney(r.breakdown.deposit)}</span></div></div>
-            ) : (
-              <>
-                <div className={base.lines} style={{ margin: '12px 0' }}>
-                  <div className={base.line}><span>Alquiler ({r.breakdown.days} {r.breakdown.days === 1 ? 'día' : 'días'})</span><span>{copMoney(r.breakdown.base)}</span></div>
-                  <div className={base.line}><span>Comisión de la plataforma (15 %)</span><span>− {copMoney(r.breakdown.commission)}</span></div>
-                  <div className={base.line}><span>Seguro náutico (no se liquida al propietario)</span><span>{copMoney(r.breakdown.insurance)}</span></div>
-                  <div className={base.line}><span>Depósito de garantía (retenido)</span><span>{copMoney(r.breakdown.deposit)}</span></div>
-                </div>
-                <div className={styles.net}><span>Neto a recibir:</span><strong>{copMoney(r.breakdown.ownerNet)}</strong></div>
-              </>
-            )}
+            <span className={base.muted}>{r.sectionTitle ?? 'Resumen de pago'}</span>
+            <div className={styles.net}>
+              <span>{r.totalPaid != null ? 'Total pagado' : r.calculatedTotal != null ? 'Total calculado' : r.estimatedTotal != null ? 'Total estimado' : 'Sin importe'}</span>
+              <strong>{r.totalPaid ?? r.calculatedTotal ?? r.estimatedTotal ?? ''}</strong>
+            </div>
+            {r.clarifyingNote != null && <p className={base.muted}>{r.clarifyingNote}</p>}
           </section>
           {cancelable ? (
             <Button variant="outlineDanger" block onClick={() => setModal('cancel')}>✕ Cancelar reserva</Button>
@@ -248,7 +260,13 @@ export default function OwnerReservationDetailPage() {
         open={modal === 'claim'}
         onClose={() => setModal(null)}
         loading={claim.isPending}
-        onSubmit={(text) => claim.mutate({ id: r.id, text }, { onSuccess: () => setModal(null) })}
+        error={claim.error}
+        response={claimResponse}
+        onSubmit={(text) => {
+          if (!dispute?.id || claimPending.current) return
+          claimPending.current = true
+          claim.mutate({ id: dispute.id, text }, { onSettled: () => { claimPending.current = false } })
+        }}
       />
     </>
   )

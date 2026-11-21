@@ -42,7 +42,7 @@ function ReservationValue({ reservationId }) {
             <div className={styles.line}><span>Depósito de garantía</span><span>{copDecimal(data.deposit)}</span></div>
             <div className={`${styles.line} ${styles.total}`}><span>Total registrado</span><span>{copDecimal(data.total)}</span></div>
           </div>
-          <p className={styles.payNote}>Calculado y registrado por el backend para la reserva {reservationId}. El resumen local sigue usando valores simulados del prototipo (M2).</p>
+          <p className={styles.payNote}>Calculado y registrado por el backend para la reserva {reservationId}.</p>
         </>
       )}
     </section>
