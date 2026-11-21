@@ -4,6 +4,7 @@ import { BoatCard, FinancialSummary, ReservationItem } from '@/components/cards'
 import { FilterBar } from '@/components/filters'
 import { OWNER_FINANCE_SUBNAV, TopBar } from '@/components/layout'
 import { ConfirmReservationModal, DisputeResolutionModal, WithdrawFundsModal } from '@/components/modals'
+import { MapPicker } from '@/features/boats/components/MapPicker'
 import { MemoryRouter } from 'react-router-dom'
 import styles from './ComponentCatalog.module.css'
 
@@ -33,6 +34,7 @@ export default function ComponentCatalog() {
   const [note, setNote] = useState('')
   const [amount, setAmount] = useState('')
   const [account, setAccount] = useState('2840')
+  const [point, setPoint] = useState(null)
   const close = () => setModal(null)
 
   return (
@@ -115,6 +117,13 @@ export default function ComponentCatalog() {
           selectedTypes={types}
           onToggleType={(v) => setTypes((t) => (t.includes(v) ? t.filter((x) => x !== v) : [...t, v]))}
         />
+      </Section>
+
+      <Section title="Mapa de coordenadas (M1)">
+        <div className={styles.col}>
+          <MapPicker point={point} onSelect={setPoint} />
+          <Input label="Coordenadas elegidas" value={point ? `${point.lat}, ${point.long}` : ''} placeholder="Toca el mapa" readOnly />
+        </div>
       </Section>
 
       <Section title="Modales de negocio">

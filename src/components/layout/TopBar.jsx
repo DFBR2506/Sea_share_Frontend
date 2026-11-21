@@ -12,7 +12,7 @@ import styles from './TopBar.module.css'
  * Barra superior por rol (ADMIN | OWNER | RENTER | FINADMIN).
  * El item activo sale de la ruta; `subItems` muestra la píldora secundaria (Finanzas del Owner).
  */
-export function TopBar({ role, subItems, brandTo = '/', sticky = true, onProfileClick, onLogout }) {
+export function TopBar({ role, subItems, brandTo = '/', sticky = true, onProfileClick, onLogout, actions }) {
   const [open, setOpen] = useState(false)
   const { items, initial, subtitle } = NAV_BY_ROLE[role]
   const brand = Boolean(onLogout) // variante azul (Owner)
@@ -38,7 +38,10 @@ export function TopBar({ role, subItems, brandTo = '/', sticky = true, onProfile
         </div>
 
         {brand ? (
-          <SlideButton icon={logoutIcon} className={styles.logout} onClick={onLogout} aria-label="Cerrar sesión">Cerrar sesión</SlideButton>
+          <div className={styles.right}>
+            {actions}
+            <SlideButton icon={logoutIcon} className={styles.logout} onClick={onLogout} aria-label="Cerrar sesión">Cerrar sesión</SlideButton>
+          </div>
         ) : (
           <button type="button" className={styles.profile} onClick={onProfileClick} title={onProfileClick ? 'Cerrar sesión' : undefined}>
             <span>Perfil</span>

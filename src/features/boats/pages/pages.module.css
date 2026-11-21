@@ -12,6 +12,8 @@
 /* Formularios */
 .formGrid { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 960px) { .formGrid.split { grid-template-columns: 320px 1fr; gap: 32px; } }
+/* Paso 2 del registro: el mapa manda, los servicios caben en la columna estrecha. */
+@media (min-width: 960px) { .formGrid.splitWide { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; } }
 .stack { display: flex; flex-direction: column; gap: 16px; }
 .two { display: grid; grid-template-columns: 1fr; gap: 16px; }
 @media (min-width: 560px) { .two { grid-template-columns: 1fr 1fr; } }
@@ -34,3 +36,9 @@
 .bigAvatar { display: grid; place-items: center; width: 60px; height: 60px; border: 2px solid var(--seashare-color-brand-primary); border-radius: 50%; background: var(--seashare-color-brand-soft); font-size: 20px; font-weight: 700; }
 .ownerWho h1 { margin: 0; font-size: 24px; }
 .ownerWho p { margin: 2px 0 0; font-size: 11px; }
+
+/* Mensajes de validación y textos auxiliares de los formularios de flota */
+.fieldError { display: block; margin-top: 6px; font-size: 11px; color: var(--seashare-color-brand-accent); }
+.formError { margin: 16px 0 0; font-size: 12px; color: var(--seashare-color-brand-accent); }
+.draftName { margin: 0 0 12px; font-size: 16px; font-weight: 700; font-style: italic; color: var(--seashare-color-text-brand); }
+.actionNote { margin: 12px 0 0; font-size: 11px; color: var(--seashare-color-text-secondary); }

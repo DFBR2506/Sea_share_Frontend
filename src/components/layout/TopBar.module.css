@@ -10,8 +10,14 @@
 .brand_ .mark { width: 32px; height: 32px; }
 .logo { color: #fff; }
 .brand_ .subtitle { color: color-mix(in srgb, #fff 80%, transparent); }
-.logout { grid-column: 3; grid-row: 1; border-color: transparent; }
-@media (max-width: 767px) { .logout { padding: 0 var(--space-3) 0 48px; font-size: 12px; } }
+.right { display: flex; align-items: center; gap: var(--space-2); grid-column: 3; grid-row: 1; }
+.logout { border-color: transparent; }
+/* En móvil la campana y el botón de salir se aprietan para que la marca quepa en una línea. */
+@media (max-width: 767px) {
+  .logout { padding: 0 var(--space-2) 0 44px; font-size: 12px; }
+  .right { gap: 0; }
+  .logo { white-space: nowrap; }
+}
 .main {
   display: grid;
   grid-template-columns: auto 1fr auto;
