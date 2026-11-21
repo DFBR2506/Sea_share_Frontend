@@ -1,10 +1,10 @@
 import styles from './FilterBar.module.css'
 
 /**
- * Barra de filtros de Explorar: fechas · pasajeros · tipos (multi-selección) · "+ Filtros".
+ * Barra de filtros de Explorar para fechas, pasajeros y tipos de embarcacion.
  * types: [{value,label}], selectedTypes: string[]
  */
-export function FilterBar({ dates, passengers, types = [], selectedTypes = [], onDatesClick, onPassengersClick, onToggleType, onMoreFilters }) {
+export function FilterBar({ dates, passengers, types = [], selectedTypes = [], onDatesClick, onPassengersClick, onToggleType }) {
   return (
     <div className={styles.bar} role="group" aria-label="Filtros">
       <button type="button" className={styles.segment} onClick={onDatesClick}>
@@ -26,7 +26,6 @@ export function FilterBar({ dates, passengers, types = [], selectedTypes = [], o
           {label}
         </button>
       ))}
-      <button type="button" className={styles.more} onClick={onMoreFilters}>+ Filtros</button>
     </div>
   )
 }
