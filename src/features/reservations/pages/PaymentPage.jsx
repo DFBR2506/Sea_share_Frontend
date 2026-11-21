@@ -1,5 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui'
+import { VesselPhoto } from '@/components/cards/VesselPhoto'
 import { formatRange } from '@/lib/dates'
 import { useCheckout } from '../checkout/checkoutContext'
 import CheckoutTimer from '../checkout/CheckoutTimer'
@@ -23,7 +24,7 @@ export default function PaymentPage() {
         <div>
           <section className={styles.panel}>
             <div className={styles.boatRow}>
-              <div className={styles.thumb} />
+              <VesselPhoto src={boat.imageUrl} name={boat.name} className={styles.thumb} />
               <div>
                 <h3>{boat.name}</h3>
                 <p>{formatRange(start, end)} · {days} {days === 1 ? 'día' : 'días'} · {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}</p>

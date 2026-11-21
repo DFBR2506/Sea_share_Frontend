@@ -9,7 +9,7 @@ export function DisputeResolutionModal({ open, onClose, onConfirm, disputeCode, 
       onClose={onClose}
       tone="danger"
       title="Resolver disputa"
-      subtitle="La decisión se notificará a ambas partes."
+      subtitle="Esta decisión es definitiva y se enviará al módulo financiero para gestionar la garantía."
       icon={<img src={disputeIcon} alt="" className={styles.icon} />}
       footer={
         <>
@@ -22,6 +22,7 @@ export function DisputeResolutionModal({ open, onClose, onConfirm, disputeCode, 
       <p className={styles.muted}>{claim}</p>
       <Textarea
         label="Motivo de la resolución"
+        maxLength={1000}
         placeholder="Escribe una nota opcional…"
         value={note}
         onChange={(e) => onNoteChange?.(e.target.value)}

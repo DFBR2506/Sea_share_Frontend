@@ -1,4 +1,4 @@
-import { request } from '../../../lib/http'
+import { ApiError, request } from '../../../lib/http'
 import { mapVessel } from './vesselMapper'
 import { mapReservation } from './reservationMapper'
 import { mapReservationStatus } from './statusMap'
@@ -30,7 +30,20 @@ export const listBoats = async ({ passengers, type, startDate, endDate, includeP
   return includePagination ? { vessels, pagination } : vessels
 }
 
-export const getBoat = (id) => request('m2', `/api/v1/vessels/${id}`).then(mapVessel)
+export const getBoat = async (id, { signal } = {}) => {
+  const vessel = await request('m2', `/api/v1/vessels/${id}`, { signal })
+  if (!vessel.image_url && !vessel.photo_url) {
+    try {
+      // Compatibilidad con el M2 desplegado, cuyo detalle todavía omite photo_url.
+      const fleet = await request('m1', `/api/v1/vessels/${id}`, { signal })
+      vessel.photo_url = fleet.photo_url
+    } catch (error) {
+      if (error.name === 'AbortError') throw error
+      // La ficha sigue siendo útil aunque falle la imagen de Flota.
+    }
+  }
+  return mapVessel(vessel)
+}
 
 export const getQuotation = (id, startDate, endDate, passengers) => {
   const query = new URLSearchParams({ start_date: startDate, end_date: endDate, passengers: String(passengers) })
@@ -41,14 +54,41 @@ export const createReservation = (body, idempotencyKey) => request('m2', '/api/v
   method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey },
 })
 
-export const listReservations = () => request('m2', '/api/v1/reservations').then((data) => data.reservations.map(mapReservation))
+export const listReservations = async ({ signal } = {}) => {
+  const reservations = []
+  let page = 1
+  let totalPages
+  do {
+    const data = await request('m2', `/api/v1/reservations?page=${page}&limit=50`, { signal })
+    if (!Array.isArray(data?.reservations)) throw new Error('La respuesta no contiene las reservas.')
+    reservations.push(...data.reservations.map(mapReservation))
+    totalPages = data.pagination?.total_pages ?? 1
+    page += 1
+  } while (page <= totalPages)
+  return reservations
+}
+
+export const getCheckoutReservation = (id) => request('m2', `/api/v1/reservations/${id}`)
+
+export const abandonReservation = async (id, identity) => {
+  try {
+    await request('m2', `/api/v1/reservations/${id}/abandonment`, {
+      method: 'POST', headers: identity ? { 'X-User-Id': identity.userId, 'X-User-Role': identity.role } : undefined,
+    })
+    return { supported: true }
+  } catch (error) {
+    // Los despliegues anteriores no tienen esta operación: el TTL sigue siendo el respaldo.
+    if (error instanceof ApiError && [404, 405].includes(error.status)) return { supported: false }
+    throw error
+  }
+}
 
 export const getReservation = (id) => request('m2', `/api/v1/reservations/${id}`).then(mapReservation)
 
 export const cancelReservation = (id) => request('m2', `/api/v1/reservations/${id}/cancellation`, { method: 'POST' })
 
 // ---- Lado Propietario / Administrador ----
-export const listOwnerReservations = () => request('m2', '/api/v1/reservations').then((data) => data.reservations.map(mapReservation))
+export const listOwnerReservations = listReservations
 export const getOwnerReservation = (id) => request('m2', `/api/v1/reservations/${id}`).then((data) => ({
   ...mapReservation(data),
   boat: {
@@ -68,11 +108,12 @@ export const startNavigation = (id) => request('m2', `/api/v1/reservations/${id}
   phase: undefined,
   realDeparture: data.actual_departure_at ?? '',
 }))
-export const endNavigation = (id) => request('m2', `/api/v1/reservations/${id}/navigation-end`, { method: 'POST' }).then((data) => ({
+export const endNavigation = ({ id, remarks }) => request('m2', `/api/v1/reservations/${id}/navigation-end`, { method: 'POST', body: { remarks: remarks?.trim() || null } }).then((data) => ({
   id: data.reservation_id,
   boatId: data.vessel_id,
   status: mapReservationStatus(data.status),
   realArrival: data.actual_arrival_at ?? '',
+  disputeId: data.dispute?.dispute_id ?? data.dispute_id ?? null,
 }))
 export const markNoShow = (id) => request('m2', `/api/v1/reservations/${id}/no-show`, { method: 'POST' }).then((data) => ({
   id: data.reservation_id,
@@ -95,13 +136,17 @@ export const cancelByHost = (id, { reason, justification }) =>
     cancelJustification: data.justification ?? '',
   }))
 
-export const submitClaim = async (id, text) => {
-  return request('m2', `/api/v1/disputes/${id}/claims`, { method: 'POST', body: { description: text } })
+export const submitClaim = async (id, claim) => {
+  return request('m2', `/api/v1/disputes/${id}/claims`, { method: 'POST', body: claim })
 }
 
 export const listDisputes = ({ reservationId, signal } = {}) => {
   const query = reservationId ? `?${new URLSearchParams({ reservation_id: reservationId })}` : ''
-  return request('m2', `/api/v1/disputes${query}`, { signal }).then((data) => data.disputes.map((dispute) => ({
+  return request('m2', `/api/v1/disputes${query}`, { signal }).then((data) => data.disputes.map(mapDispute))
+}
+
+function mapDispute(dispute) {
+  return {
     id: dispute.dispute_id,
     reservationId: dispute.reservation_id,
     status: dispute.status,
@@ -109,7 +154,21 @@ export const listDisputes = ({ reservationId, signal } = {}) => {
     windowEnd: dispute.window_end,
     claim: dispute.claim?.description ?? null,
     claimData: dispute.claim ?? null,
-  })))
+    reason: dispute.reason ?? null,
+    resolvedAt: dispute.resolved_at ?? null,
+    resolvedBy: dispute.resolved_by ?? null,
+    reservation: dispute.reservation ?? null,
+    internalNotes: dispute.internal_notes ?? null,
+  }
+}
+
+export const getDispute = async (id, { signal } = {}) => {
+  try {
+    return mapDispute(await request('m2', `/api/v1/disputes/${id}`, { signal }))
+  } catch (error) {
+    if (error instanceof ApiError && [404, 405].includes(error.status)) return null
+    throw error
+  }
 }
 export const resolveDispute = (id, { accepted, note, internalNotes }) => {
   return request('m2', `/api/v1/disputes/${id}/status`, {

@@ -7,7 +7,9 @@ import { MapPicker } from '../components/MapPicker'
 import { MANDATORY_SERVICES, SERVICE_OPTIONS } from '../constants'
 import { formatCoordinate, typeName } from '../format'
 import { useUpdateVessel, useVessel } from '../hooks'
-import { capacityError, MESSAGES, nameError, normalizeName, photoError, portNameError, rateError } from '../validation'
+import { capacityError, MESSAGES, nameError, normalizeName, portNameError, rateError } from '../validation'
+import { usePhotoUpload } from '../usePhotoUpload'
+import { photoSaveMessage } from '../photoUpload'
 import styles from './pages.module.css'
 
 const pointOf = (port) => {
@@ -28,8 +30,7 @@ function EditForm({ vessel }) {
     point: pointOf(vessel.port),
     extras: vessel.extras,
   })
-  const [photo, setPhoto] = useState(null)
-  const [photoProblem, setPhotoProblem] = useState(null)
+  const { photo, photoProblem, photoBusy, photoPreview, pickPhoto } = usePhotoUpload()
   const [touched, setTouched] = useState(false)
   const [discarding, setDiscarding] = useState(false)
 
@@ -48,12 +49,8 @@ function EditForm({ vessel }) {
   const toggle = (s) => setForm((f) => ({ ...f, extras: f.extras.includes(s) ? f.extras.filter((x) => x !== s) : [...f.extras, s] }))
   const show = (key) => (touched && errors[key]) || undefined
 
-  const pickPhoto = async (file) => {
-    setPhoto(file)
-    setPhotoProblem(file ? await photoError(file) : null)
-  }
-
   const save = () => {
+    if (photoBusy || update.isPending) return
     setTouched(true)
     if (Object.values(errors).some(Boolean)) return
     update.mutate(
@@ -80,9 +77,9 @@ function EditForm({ vessel }) {
         <div className={`${styles.formGrid} ${styles.split}`}>
           <div>
             <p className={styles.sectionLabel}>Fotografía de la embarcación</p>
-            <label className={styles.photoBox} style={vessel.photoUrl ? { backgroundImage: `url(${vessel.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
-              <span className={styles.photoBtn}>{photo ? photo.name : 'Cambiar fotografía'}</span>
-              <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)} />
+            <label className={styles.photoBox} style={photoPreview || vessel.photoUrl ? { backgroundImage: `url(${photoPreview || vessel.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+              <span className={styles.photoBtn}>{photoBusy ? 'Preparando fotografía…' : photo ? photo.name : 'Cambiar fotografía'}</span>
+              <input type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden disabled={update.isPending} onChange={(e) => { update.reset(); pickPhoto(e.target.files?.[0] ?? null) }} />
             </label>
             {(photoProblem || server('photo')) && <span role="alert" className={styles.fieldError}>{photoProblem || server('photo')}</span>}
             <div className={styles.lockedWrap}>
@@ -120,10 +117,10 @@ function EditForm({ vessel }) {
             </div>
           </div>
         </div>
-        {update.error && <p role="alert" className={styles.formError}>{update.error.message}</p>}
+        {update.error && <p role="alert" className={styles.formError}>{photoSaveMessage(update.error)}</p>}
         <div className={styles.footerBar}>
           <Button variant="soft" square onClick={() => setDiscarding(true)}>Descartar</Button>
-          <Button square onClick={save} disabled={update.isPending}>{update.isPending ? 'Guardando…' : 'Guardar cambios'}</Button>
+          <Button square onClick={save} disabled={update.isPending || photoBusy}>{photoBusy ? 'Preparando imagen…' : update.isPending ? 'Guardando…' : 'Guardar cambios'}</Button>
         </div>
       </PageCard>
 

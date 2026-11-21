@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import boatIcon from '@/assets/icons/boat.svg'
+import { VesselPhoto } from '@/components/cards/VesselPhoto'
 import { StatGrid } from '@/components/cards'
 import { Button } from '@/components/ui'
 import { CancelReservationModal } from '../components/CancelReservationModal'
+import PaymentConfirmationPanel from '../components/PaymentConfirmationPanel'
 import { useBoat, useReservation } from '../hooks'
 import styles from './pages.module.css'
 import owner from './owner.module.css'
@@ -33,11 +34,7 @@ export default function ReservationDetailPage() {
           <h1 className={styles.title}>{boat.name}</h1>
           <p className={styles.muted}>{boat.location}</p>
           <p className={styles.muted}>{boat.passengers} pasajeros · {boat.cabins} camarotes{boat.lengthM != null && <> · {boat.lengthM} m de eslora</>}</p>
-          <div className={owner.gallery} aria-label="Fotos del barco">
-            <div className={owner.empty}><img src={boatIcon} alt="" width="28" height="28" /><span>Sin fotos disponibles</span></div>
-            <div className={owner.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
-            <div className={owner.empty}><img src={boatIcon} alt="" width="20" height="20" /></div>
-          </div>
+          <VesselPhoto src={res.imageUrl || boat.imageUrl} name={boat.name} />
           <StatGrid items={[
             { value: boat.passengers, label: 'PASAJEROS' },
             { value: boat.captain ? 'Sí' : 'No', label: 'CAP. INCLUIDO' },
@@ -61,6 +58,7 @@ export default function ReservationDetailPage() {
         </div>
 
         <aside>
+          <PaymentConfirmationPanel reservationId={res.id} />
           <section className={`${styles.panel} ${styles.paySummary} ${owner.sheet}`}>
             <span className={styles.muted}>{res.sectionTitle ?? 'Resumen de pago'}</span>
             <div className={styles.lines} style={{ margin: '12px 0' }}>

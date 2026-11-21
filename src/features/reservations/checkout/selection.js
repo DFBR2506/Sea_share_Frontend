@@ -1,7 +1,8 @@
 import { fromISO, toISO } from '../../../lib/dates.js'
+import { harborDateTime, HARBOR_TIMEZONE } from './departure.js'
 
 // Valida el contexto compartido por el resumen y el siguiente paso del pago.
-export function readPaymentSelection(params, maxPassengers) {
+export function readPaymentSelection(params, maxPassengers, { now = Date.now(), timezone = HARBOR_TIMEZONE } = {}) {
   const startValue = params.get('start')
   const endValue = params.get('end')
   const start = fromISO(startValue)
@@ -13,6 +14,7 @@ export function readPaymentSelection(params, maxPassengers) {
 
   if (!Number.isInteger(maxPassengers) || maxPassengers < 1
     || !validDate(startValue, start) || !validDate(endValue, end) || end < start
+    || startValue < harborDateTime(now, timezone).date
     || !Number.isInteger(pax) || pax < 1 || pax > maxPassengers) return null
 
   return { start, end, pax }

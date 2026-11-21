@@ -4,6 +4,8 @@ import { SlidingTabs, StatusBadge } from '@/components/ui'
 import { copMoney } from '@/lib/dates'
 import { getReservationStatusUI } from '../api/statusMap'
 import { useOwnerReservations } from '../hooks'
+import { reservationView } from '../reservationViews'
+import { VesselPhoto } from '@/components/cards/VesselPhoto'
 import styles from './pages.module.css'
 import owner from './owner.module.css'
 
@@ -12,7 +14,7 @@ export default function OwnerReservationsPage() {
   const { data: reservations = [], isPending, error } = useOwnerReservations()
   const [tab, setTab] = useState('historial')
 
-  const shown = reservations.filter((r) => (tab === 'canceladas' ? r.status === 'CANCELADA' : true))
+  const shown = reservationView(reservations, tab)
 
   if (error) return <p role="alert" className={styles.state}>{error.code}: {error.message}</p>
 
@@ -37,7 +39,7 @@ export default function OwnerReservationsPage() {
               tabIndex={0}
               role="link"
             >
-              <div className={owner.thumb}>FOTO</div>
+              <VesselPhoto src={r.imageUrl} name={r.boatName} className={owner.thumb} />
               <div className={owner.info}>
                 <h3>{r.boatName}</h3>
                 <p>{r.dates} · {r.duration} · {r.guest} · {r.pax} pasajeros</p>

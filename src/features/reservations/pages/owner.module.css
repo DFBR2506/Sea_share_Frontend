@@ -75,6 +75,8 @@
 .infoPanel h3 { margin: 0 0 4px; font-size: 16px; }
 .infoPanel small { display: block; margin-bottom: var(--space-3); font-size: 12px; color: var(--seashare-color-text-secondary); }
 .infoPanel p { margin: 0; font-size: 14px; color: var(--seashare-color-text-secondary); }
+.infoPanel p + p { margin-top: var(--space-3); }
+.infoPanel p, .disputeCard p, .selBtn { overflow-wrap: anywhere; }
 .resolveBar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
 .reject { background: var(--seashare-color-surface); color: var(--seashare-color-brand-accent); border: 1px solid var(--seashare-color-border-default); }
 .resolved { padding: var(--space-4); border-radius: var(--radius-md); background: var(--seashare-color-success-bg); font-size: 13px; }

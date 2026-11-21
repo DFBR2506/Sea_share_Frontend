@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { isSameDay, monthName, startOfDay } from '@/lib/dates'
 import { cx } from '@/lib/cx'
+import { useNow } from '@/lib/useNow'
 import styles from './DateRangeCalendar.module.css'
 
-// "Hoy" se fija al cargar el módulo (suficiente para una sesión de navegación)
-const TODAY = startOfDay(new Date())
 const DOW = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
 
 /**
  * Calendario de rango (inicio → fin). value: { start: Date|null, end: Date|null }.
  * Primer clic = inicio; segundo clic (≥ inicio) = fin; un tercer clic reinicia la selección.
  */
-export function DateRangeCalendar({ value, onChange, minDate = TODAY }) {
+export function DateRangeCalendar({ value, onChange, minDate }) {
+  const today = startOfDay(new Date(useNow()))
+  minDate ??= today
   const [view, setView] = useState(() => new Date((value.start ?? minDate).getFullYear(), (value.start ?? minDate).getMonth(), 1))
   const { start, end } = value
   const year = view.getFullYear()
@@ -60,7 +61,7 @@ export function DateRangeCalendar({ value, onChange, minDate = TODAY }) {
                 inRange && (isStart || date.getDay() === 1 || date.getDate() === 1) && styles.first,
                 inRange && (isEnd || date.getDay() === 0 || date.getDate() === daysInMonth) && styles.last,
                 (isStart || isEnd) && styles.edge,
-                isSameDay(date, TODAY) && styles.today,
+                isSameDay(date, today) && styles.today,
               )}
               onClick={() => pick(date)}
             >
