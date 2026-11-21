@@ -36,7 +36,7 @@ export function mapReservation(reservation) {
     id: reservation.reservation_id,
     boatId: reservation.vessel.vessel_id,
     boatName: reservation.vessel.name ?? '',
-    imageUrl: reservation.vessel.image_url ?? '',
+    imageUrl: reservation.vessel.photo_url?.trim() || reservation.vessel.image_url?.trim() || '',
     departureTime: dateParts(departure)?.time ?? '',
     ttlRemainingSeconds: indicators?.ttl_remaining_seconds ?? null,
     availableActions: actions ?? {},

@@ -94,7 +94,7 @@ export const getOwnerReservation = (id) => request('m2', `/api/v1/reservations/$
   boat: {
     name: data.vessel?.name ?? '',
     type: data.vessel?.type ?? '',
-    imageUrl: data.vessel?.image_url ?? '',
+    imageUrl: data.vessel?.photo_url?.trim() || data.vessel?.image_url?.trim() || '',
     amenities: data.vessel?.included_services ?? [],
     location: data.itinerary?.departure_port?.name ?? '',
     shortLocation: data.itinerary?.departure_port?.name ?? '',
