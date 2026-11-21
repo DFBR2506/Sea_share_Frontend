@@ -30,7 +30,7 @@ export function VesselDetailView({ vessel, servicesNote }) {
         <InfoTile label="Matrícula legal" value={vessel.plate} />
         <InfoTile label="Tipo de embarcación" value={typeName(vessel.type)} />
         <InfoTile label="Capacidad máxima" value={formatCapacity(vessel.capacity)} />
-        <InfoTile label="Tarifa base (por hora)" value={copMoney(Number(vessel.hourlyRate))} />
+        <InfoTile label="Tarifa base (por día)" value={copMoney(Number(vessel.hourlyRate))} />
         <InfoTile
           className={styles.wide}
           label="Puerto de atraque y ubicación GPS"

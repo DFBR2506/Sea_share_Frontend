@@ -91,7 +91,7 @@ function EditForm({ vessel }) {
             <Input caps label="Nombre de la embarcación" maxLength={50} value={form.name} onChange={set('name')} error={show('name') || server('name')} />
             <div className={styles.two}>
               <Input caps label="Capacidad máxima (pasajeros)" inputMode="numeric" value={form.capacity} onChange={set('capacity')} error={show('capacity') || server('max_capacity')} />
-              <Input caps label="Tarifa base (por hora)" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate') || server('base_rate')} />
+              <Input caps label="Tarifa base (por día)" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate') || server('base_rate')} />
             </div>
             <div>
               <p className={styles.sectionLabel}>Puerto de atraque (selección en mapa interactivo)</p>

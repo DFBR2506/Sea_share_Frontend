@@ -159,7 +159,7 @@ function RegisterForm({ draft }) {
                   </div>
                 </div>
               </div>
-              <Input caps label="Tarifa base (por hora en COP)" placeholder="Ej. 180000" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate', errors2) || server('base_rate')} />
+              <Input caps label="Tarifa base (por día en COP)" placeholder="Ej. 180000" inputMode="numeric" value={form.hourlyRate} onChange={set('hourlyRate')} error={show('hourlyRate', errors2) || server('base_rate')} />
               <div>
                 <p className={styles.sectionLabel}>Fotografía oficial</p>
                 <label className={styles.drop}>
@@ -270,13 +270,23 @@ function DraftDecision({ draft, onContinue, onRestart }) {
   )
 }
 
+function RegistrationSession({ initialDraft }) {
+  // Solo el borrador encontrado al entrar requiere una decisión, no el creado en esta visita.
+  const [draft] = useState(initialDraft)
+  const [decision, setDecision] = useState(initialDraft ? null : 'new')
+
+  if (draft && decision === null) {
+    return <DraftDecision draft={draft} onContinue={() => setDecision('continue')} onRestart={() => setDecision('new')} />
+  }
+  return <RegisterForm key={decision} draft={decision === 'continue' ? draft : null} />
+}
+
 // Si quedó un borrador del paso 1 se pregunta antes: retomarlo o descartarlo y empezar de cero.
 export default function VesselRegisterPage() {
   const { data: draft, isPending, error, refetch } = useDraft()
-  const [decision, setDecision] = useState(null) // null = sin decidir | 'continue' | 'new'
 
   if (isPending) return <p>Cargando…</p>
-  if (error) {
+  if (error && draft === undefined) {
     return (
       <PageCard maxWidth={520}>
         <PageCardHead title="No se pudo cargar el registro pendiente" subtitle="Verifica tu conexión a internet e inténtalo nuevamente." />
@@ -284,8 +294,5 @@ export default function VesselRegisterPage() {
       </PageCard>
     )
   }
-  if (draft && decision === null) {
-    return <DraftDecision draft={draft} onContinue={() => setDecision('continue')} onRestart={() => setDecision('new')} />
-  }
-  return <RegisterForm key={decision ?? 'fresh'} draft={decision === 'new' ? null : (draft ?? null)} />
+  return <RegistrationSession initialDraft={draft} />
 }

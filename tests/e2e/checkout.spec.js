@@ -3,6 +3,33 @@ import { test, expect, BOAT_ID, NOW, RESERVATION_ID, completeContact, method, op
 const posts = (state, suffix) => state.requests.filter((r) => r.method === 'POST' && r.path.endsWith(suffix))
 const storedCheckout = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem('seashare.checkout.v1')))
 
+test('la reserva comienza con un pasajero, respeta la capacidad y cotiza sin incrementarlo', async ({ page, state }) => {
+  await page.goto(`/explorar/${BOAT_ID}`)
+  const less = page.getByRole('button', { name: 'Menos pasajeros', exact: true })
+  const more = page.getByRole('button', { name: 'Más pasajeros', exact: true })
+  const count = less.locator('..').locator('span')
+  await expect(count).toHaveText('1')
+  await expect(less).toBeDisabled()
+  for (let i = 0; i < 4; i += 1) await more.click()
+  await expect(count).toHaveText('5')
+  await expect(more).toBeDisabled()
+  for (let i = 0; i < 4; i += 1) await less.click()
+  await expect(count).toHaveText('1')
+  await expect(less).toBeDisabled()
+  await page.getByRole('button', { name: '22 de noviembre de 2026', exact: true }).click()
+  const quotation = page.waitForRequest((request) => {
+    const url = new URL(request.url())
+    return url.pathname.endsWith('/quotations') && url.searchParams.get('passengers') === '1'
+  })
+  await page.getByRole('button', { name: '23 de noviembre de 2026', exact: true }).click()
+  await quotation
+  await expect.poll(() => posts(state, '/estimates/individual').some((request) => request.body.passengers === 1)).toBe(true)
+  await expect(page.getByText(/Total estimado.*1 pasajero$/)).toBeVisible()
+  await page.getByRole('button', { name: 'Reservar', exact: true }).click()
+  await expect(page).toHaveURL(/\/pago\?.*pax=1/)
+  expect(posts(state, '/reservations')).toHaveLength(0)
+})
+
 test('las fotos aparecen en catálogo y detalle directo, incluso con M2 antiguo', async ({ page, state }) => {
   await page.goto('/explorar')
   await expect(page.getByRole('img', { name: 'Barco de prueba', exact: true })).toBeVisible()

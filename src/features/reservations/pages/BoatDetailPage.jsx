@@ -20,7 +20,7 @@ export default function BoatDetailPage() {
   const navigate = useNavigate()
   const { data: boat, isPending, error } = useBoat(boatId)
   const [range, setRange] = useState({ start: null, end: null })
-  const [pax, setPax] = useState(null)
+  const [pax, setPax] = useState(1)
   const startDate = range.start ? toISO(range.start) : ''
   const endDate = range.end ? toISO(range.end) : ''
   const today = harborDateTime(useNow(), boat?.timezone).date
@@ -99,9 +99,9 @@ export default function BoatDetailPage() {
             <div className={styles.paxRow}>
               <div><strong>Pasajeros</strong><span className={styles.muted}>Máx. {boat.passengers} personas</span></div>
               <div className={styles.stepper}>
-                <button type="button" aria-label="Menos pasajeros" disabled={pax == null || pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
-                <span>{pax ?? '—'}</span>
-                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax((pax ?? 0) + 1)}>+</button>
+                <button type="button" aria-label="Menos pasajeros" disabled={pax <= 1} onClick={() => setPax(pax - 1)}>−</button>
+                <span>{pax}</span>
+                <button type="button" aria-label="Más pasajeros" disabled={pax >= boat.passengers} onClick={() => setPax(pax + 1)}>+</button>
               </div>
             </div>
             {days > 0 && (

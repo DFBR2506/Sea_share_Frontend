@@ -20,6 +20,7 @@ El archivo local `.env.local` usa `/api/m1`, `/api/m2` y `/api/m3`, con los dest
 - Los checkouts iniciados no se muestran como reservas confirmadas. Se conserva ID/clave/TTL al recargar. Salir intenta el abandono seguro; si M2 todavía no publica esa operación, queda el vencimiento automático como respaldo.
 - La garantía se abre automáticamente al finalizar la navegación. El propietario registra su reclamo durante las 24 horas siguientes, desde el detalle de la reserva completada; el admin lo revisa en `/admin/disputas`.
 - Las fotos PNG/JPEG se validan por contenido, se previsualizan y, si son pesadas, se reducen antes de enviarlas. No se guarda mientras se procesa la imagen. Un fallo del almacenamiento se distingue de un formato inválido.
+- El registro, la edición y el detalle de embarcaciones muestran la tarifa base por día en COP. El aviso de borrador pendiente se decide al entrar al registro, sin interrumpir el formulario al crear su propio borrador. El selector de pasajeros de una reserva comienza en 1.
 
 Los nuevos endpoints de M2 (`POST /api/v1/reservations/{id}/abandonment` y `GET /api/v1/disputes/{id}`) están implementados en el repositorio hermano `SeaShare-modulo-2`. Para probarlos antes de desplegar M2, ejecuta ese backend y cambia **solo** `M2_PROXY_TARGET=http://localhost:8080` en `.env.local` (o el puerto configurado), y reinicia Vite. Los endpoints que todavía no existen en el despliegue se tratan como compatibilidad, no como un nuevo login requerido.
 
@@ -276,7 +277,6 @@ Los archivos `mocks.js` / `ownerMocks.js` pueden eliminarse cuando ya no se usen
 - Integrar los contratos reales de M1, M2 y M3.
 - Autenticación real y obtención del rol (hoy el rol es un selector en el login).
 - Mapa interactivo para el puerto de atraque (hoy `MapPlaceholder`; ver frame «Prototipo · Mapa» de Figma).
-- Modal de proceso borrador del registro de embarcaciones (frames 28:676 a 28:863).
 - Valores calculados en el cliente que deben venir del backend: comisión, seguro y depósito del pago, política de cancelación, tolerancia de embarque.
 - Subida real de fotografías (hoy solo se selecciona el archivo).
 - Revisión visual fina contra Figma.
